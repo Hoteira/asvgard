@@ -23,6 +23,13 @@ fn main() {
     let mut svg_tags = parser::parse::load_xml(svg_data);
     let mut canva = rasterizer::canva::Canvas::new(1024, 1024);
 
+    for tag in &svg_tags {
+        println!("Tag: {}, children: {}", tag.name, tag.children.len());
+        for child in &tag.children {
+            println!("  Child: {}", child.name);
+        }
+    }
+
     for tag in &mut svg_tags {
         canva.draw(tag);
     }

@@ -14,11 +14,12 @@ impl Rasterizer {
     }
 
     pub fn draw(mut self, v_lines: &[Line], m_lines: &[Line]) -> Self {
-        for line in v_lines {
+
+        for (i, line) in v_lines.iter().enumerate() {
             self.v_line(line);
         }
 
-        for line in m_lines {
+        for (i, line) in m_lines.iter().enumerate() {
             self.m_line(line);
         }
 
@@ -148,10 +149,12 @@ impl Rasterizer {
     pub fn to_bitmap(&self) -> Vec<u8> {
         let mut out = vec![0u8; self.width * self.height];
         let mut acc = 0.0f32;
+
         for i in 0..self.width * self.height {
             acc += self.coverage_buffer[i];
             out[i] = (acc.abs().clamp(0.0, 1.0) * 255.0) as u8;
         }
+        
         out
     }
 }

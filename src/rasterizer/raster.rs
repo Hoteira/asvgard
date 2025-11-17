@@ -175,14 +175,6 @@ impl PathRasterizer {
         let height = y_max - y_min;
 
         for line in self.v_lines.iter_mut().chain(self.m_lines.iter_mut()) {
-            if line.x0 < 0.0 { line.x0 = 0.0; }
-            if line.x0 > width { line.x0 = width; }
-            if line.x1 < 0.0 { line.x1 = 0.0; }
-            if line.x1 > width { line.x1 = width; }
-            if line.y0 < 0.0 { line.y0 = 0.0; }
-            if line.y0 > height { line.y0 = height; }
-            if line.y1 < 0.0 { line.y1 = 0.0; }
-            if line.y1 > height { line.y1 = height; }
 
             line.dx = line.x1 - line.x0;
             line.dy = line.y1 - line.y0;

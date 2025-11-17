@@ -27,7 +27,7 @@ pub enum PathCommand {
 
 pub fn draw_path(tag: &mut Tag, canvas: &mut Canvas) {
     let stroke = get_stroke(tag);
-    let fill = 0x0; //get_fill(tag);
+    let fill = get_fill(tag);
     let d = tag.params.get("d").unwrap();
     let mut d_path: Vec<PathCommand> = Vec::new();
 
@@ -49,6 +49,7 @@ pub fn draw_path(tag: &mut Tag, canvas: &mut Canvas) {
         }
 
         if c.is_alphabetic() {
+
             if !current_number.is_empty() {
                 args.push(current_number.parse::<f32>().unwrap());
                 current_number.clear();
@@ -79,25 +80,34 @@ pub fn draw_path(tag: &mut Tag, canvas: &mut Canvas) {
     if !current_number.is_empty() {
         args.push(current_number.parse::<f32>().unwrap());
     }
-    if current_command != ' ' && !args.is_empty() {
-        process_command(current_command, &mut args, &mut d_path, &mut current_pos, &mut subpath_start);
+
+    if current_command != ' ' {
+        if current_command == 'Z' || current_command == 'z' || !args.is_empty() {
+            process_command(current_command, &mut args, &mut d_path, &mut current_pos, &mut subpath_start);
+        }
     }
 
     path_rasterizer.build_lines_from_path(&d_path, 1.0, 1.0);
 
+    let mut move_count = 0;
+    let mut close_count = 0;
+    for cmd in &d_path {
+        match cmd {
+            PathCommand::MoveTo(_) => move_count += 1,
+            PathCommand::ClosePath => close_count += 1,
+            _ => {}
+        }
+    }
+
     let renderer = Rasterizer::new(
-        path_rasterizer.bounds.width as usize,
-        path_rasterizer.bounds.height as usize
+        path_rasterizer.bounds.width.ceil() as usize,
+        path_rasterizer.bounds.height.ceil() as usize
     );
 
     let r_w = renderer.width;
     let bitmap = renderer.draw(&path_rasterizer.v_lines, &path_rasterizer.m_lines).to_bitmap();
 
-    println!("Bitmap length: {}", bitmap.len());
-    println!("Non-zero pixels: {}", bitmap.iter().filter(|&&x| x > 0).count());
-    println!("Sample pixels: {:?}", &bitmap[0..10.min(bitmap.len())]);
-
-    canvas.draw_bitmap(&bitmap, 0, path_rasterizer.bounds.x as i32, path_rasterizer.bounds.y as i32, r_w, bitmap.len() / r_w );
+    canvas.draw_bitmap(&bitmap, fill, path_rasterizer.bounds.x as i32, path_rasterizer.bounds.y as i32, r_w, bitmap.len() / r_w );
 }
 
 fn process_command(

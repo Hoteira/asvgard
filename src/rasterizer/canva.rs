@@ -21,7 +21,7 @@ impl Canvas {
 impl Canvas {
     pub fn draw(&mut self, tag: &mut Tag) {
         match &*tag.name {
-            "rect" => { draw_rect(tag, self) }
+            //"rect" => { draw_rect(tag, self) }
             "path" => { draw_path(tag, self) }
             _ => {}
         }
@@ -47,7 +47,6 @@ impl Canvas {
                 let screen_x = x + j as i32;
                 let screen_y = y + i as i32;
 
-                // Bounds check
                 if screen_x < 0 || screen_x >= self.width as i32 ||
                     screen_y < 0 || screen_y >= self.height as i32 {
                     continue;
@@ -58,12 +57,9 @@ impl Canvas {
 
                 let screen_idx = (screen_y as usize) * self.width + (screen_x as usize);
 
-                // Apply coverage for antialiasing
                 if coverage == 255 {
-                    // Fully opaque, just write color
                     self.data[screen_idx] = color;
                 } else {
-                    // Blend based on coverage
                     self.data[screen_idx] = blend_coverage(
                         self.data[screen_idx],
                         color,

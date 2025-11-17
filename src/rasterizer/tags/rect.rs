@@ -12,7 +12,7 @@ pub fn draw_rect(tag: &mut Tag, canvas: &mut Canvas) {
 
     let stroke = get_stroke(tag);
 
-    println!("{:?}", color);
+    println!("COLOR: {:?}", color);
 
     for i in y..y + height {
         for j in x..x + width {
