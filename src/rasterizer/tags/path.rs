@@ -108,7 +108,7 @@ pub fn draw_path(tag: &mut Tag, defs: &HashMap<String, Tag>, canvas: &mut Canvas
 
 
         for i in 0..bitmap.len() {
-            color_map.push(((bitmap[i] as u32) << 24) | color);
+            color_map.push(((bitmap[i] as u32) << 24) | fill.0);
         }
     } else {
         for i in 0..bitmap.len() {
