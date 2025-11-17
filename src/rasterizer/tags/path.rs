@@ -1,7 +1,9 @@
+use std::collections::HashMap;
 use crate::parser::tags::Tag;
 use crate::rasterizer::canva::Canvas;
 use crate::rasterizer::dda::Rasterizer;
 use crate::rasterizer::raster::{PathRasterizer, Point};
+use crate::rasterizer::tags::lgradient::load_l_gradient;
 use crate::utils::color::{get_fill, get_stroke};
 
 #[derive(Debug)]
@@ -25,7 +27,7 @@ pub enum PathCommand {
     ClosePath,
 }
 
-pub fn draw_path(tag: &mut Tag, canvas: &mut Canvas) {
+pub fn draw_path(tag: &mut Tag, defs: &HashMap<String, Tag>, canvas: &mut Canvas) {
     let stroke = get_stroke(tag);
     let fill = get_fill(tag);
     let d = tag.params.get("d").unwrap();
@@ -89,16 +91,6 @@ pub fn draw_path(tag: &mut Tag, canvas: &mut Canvas) {
 
     path_rasterizer.build_lines_from_path(&d_path, 1.0, 1.0);
 
-    let mut move_count = 0;
-    let mut close_count = 0;
-    for cmd in &d_path {
-        match cmd {
-            PathCommand::MoveTo(_) => move_count += 1,
-            PathCommand::ClosePath => close_count += 1,
-            _ => {}
-        }
-    }
-
     let renderer = Rasterizer::new(
         path_rasterizer.bounds.width.ceil() as usize,
         path_rasterizer.bounds.height.ceil() as usize
@@ -107,7 +99,26 @@ pub fn draw_path(tag: &mut Tag, canvas: &mut Canvas) {
     let r_w = renderer.width;
     let bitmap = renderer.draw(&path_rasterizer.v_lines, &path_rasterizer.m_lines).to_bitmap();
 
-    canvas.draw_bitmap(&bitmap, fill, path_rasterizer.bounds.x as i32, path_rasterizer.bounds.y as i32, r_w, bitmap.len() / r_w );
+    let mut color_map: Vec<u32> = Vec::with_capacity(bitmap.len());
+
+    if fill.1 != "" {
+        let tag = HashMap::get(&defs, &fill.1).unwrap();
+        let gradient = load_l_gradient(tag);
+
+
+
+        for i in 0..bitmap.len() {
+            color_map.push(((bitmap[i] as u32) << 24) | color);
+        }
+    } else {
+        for i in 0..bitmap.len() {
+            color_map.push(((bitmap[i] as u32) << 24) | fill.0);
+        }
+    }
+
+
+
+    canvas.draw_buffer(&color_map, path_rasterizer.bounds.x as i32, path_rasterizer.bounds.y as i32, r_w, bitmap.len() / r_w );
 }
 
 fn process_command(

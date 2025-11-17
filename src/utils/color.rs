@@ -1,14 +1,15 @@
+use std::collections::HashMap;
 use crate::parser::tags::Tag;
 
 #[inline]
-pub fn get_fill(tag: &mut Tag) -> u32 {
+pub fn get_fill(tag: &mut Tag) -> (u32, String) {
     let c = tag.params.get("fill");
 
     get_color(c)
 }
 
 #[inline]
-pub fn get_stroke(tag: &mut Tag) -> u32 {
+pub fn get_stroke(tag: &mut Tag) -> (u32, String) {
     let c = tag.params.get("stroke");
 
     get_color(c)
@@ -16,36 +17,42 @@ pub fn get_stroke(tag: &mut Tag) -> u32 {
 
 
 #[inline]
-pub fn get_color(c: Option<&String>) -> u32 {
+pub fn get_color(c: Option<&String>) -> (u32, String) {
 
     if c.is_some() {
         let c = c.unwrap().trim().to_lowercase();
 
         if named(&c).is_some() {
-            return named(&c).unwrap();
+            return (named(&c).unwrap(), String::from(""));
         }
 
         return parse_color(&c);
     }
 
-    0x0
+    (0x0, String::from(""))
 }
 
-pub fn parse_color(c: &str) -> u32 {
+pub fn parse_color(c: &str) -> (u32, String) {
 
     if c.starts_with("#") {
-        return parse_hex(c);
+        return (parse_hex(c), String::from(""));
     }
 
     if c.starts_with("rgb(") || c.starts_with("rgba(") {
-        return parse_rgb(c);
+        return (parse_rgb(c), String::from(""));
     }
 
     if c.starts_with("hsl(") || c.starts_with("hsla(") {
-        return parse_hsl(c);
+        return (parse_hsl(c), String::from(""));
     }
 
-    0x0
+    if c.starts_with("url(#") {
+        let name = c.trim_start_matches("url(#").trim_end_matches(')');
+
+        return (named(&name).unwrap_or(0x0), String::from(name));
+    }
+
+    (0x0, String::from(""))
 }
 
 fn parse_hsl(hsl: &str) -> u32 {

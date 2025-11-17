@@ -16,7 +16,7 @@ pub fn draw_rect(tag: &mut Tag, canvas: &mut Canvas) {
 
     for i in y..y + height {
         for j in x..x + width {
-            canvas.data[i * canvas.width + j] = color;
+            canvas.data[i * canvas.width + j] = color.0;
         }
     }
 }

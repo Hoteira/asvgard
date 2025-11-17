@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::parser::tags::Tag;
 use crate::rasterizer::tags::path::draw_path;
 use crate::rasterizer::tags::rect::draw_rect;
@@ -19,24 +20,23 @@ impl Canvas {
 }
 
 impl Canvas {
-    pub fn draw(&mut self, tag: &mut Tag) {
+    pub fn draw(&mut self, tag: &mut Tag, defs: &HashMap<String, Tag>) {
         match &*tag.name {
             //"rect" => { draw_rect(tag, self) }
-            "path" => { draw_path(tag, self) }
+            "path" => { draw_path(tag, defs, self) }
             _ => {}
         }
 
         let children = tag.children.len();
 
         for i in 0..children {
-            self.draw(&mut tag.children[i]);
+            self.draw(&mut tag.children[i], defs);
         }
     }
 
-    pub fn draw_bitmap(
+    pub fn draw_buffer(
         &mut self,
-        bitmap: &[u8],
-        color: u32,
+        bitmap: &[u32],
         x: i32,
         y: i32,
         bitmap_width: usize,
@@ -52,13 +52,14 @@ impl Canvas {
                     continue;
                 }
 
-                let coverage = bitmap[i * bitmap_width + j];
+                let coverage = ((bitmap[i * bitmap_width + j] >> 24) & 0xFF) as u8;
+                let color = bitmap[i * bitmap_width + j] & 0xFFFFFF;
                 if coverage == 0 { continue; }
 
                 let screen_idx = (screen_y as usize) * self.width + (screen_x as usize);
 
                 if coverage == 255 {
-                    self.data[screen_idx] = color;
+                    self.data[screen_idx] = bitmap[i * bitmap_width + j];
                 } else {
                     self.data[screen_idx] = blend_coverage(
                         self.data[screen_idx],
