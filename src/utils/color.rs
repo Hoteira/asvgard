@@ -43,10 +43,9 @@ pub fn parse_color(c: &str) -> u32 {
 
     if c.starts_with("hsl(") || c.starts_with("hsla(") {
         return parse_hsl(c);
-
     }
 
-    0
+    0x0
 }
 
 fn parse_hsl(hsl: &str) -> u32 {
