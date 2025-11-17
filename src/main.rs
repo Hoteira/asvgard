@@ -1,34 +1,36 @@
-mod tags;
+
+mod parser;
+mod rasterizer;
+mod utils;
+
+use minifb;
+use minifb::{Window, WindowOptions};
 
 fn main() {
 
     let svg_data = include_bytes!("../icon.svg");
 
-    let mut name = Vec::new();
-    let mut tag_start = false;
-    let mut tags_open = 0;
+    let mut window = Window::new(
+        "Asvgard - SVG Rasterizer",
+        1024,
+        1024,
+        WindowOptions::default(),
+    )
+        .unwrap_or_else(|e| {
+            panic!("{}", e);
+        });
 
-    for data in svg_data {
-        if *data == '<' as u8 {
-            tag_start = true;
-            tags_open += 1;
-        } else if tag_start {
-            if *data == ' ' as u8 || *data == '>' as u8 {
-                tag_start = false;
+    let mut svg_tags = parser::parse::load_xml(svg_data);
+    let mut canva = rasterizer::canva::Canvas::new(1024, 1024);
 
-                println!("{}", String::from_utf8(name.clone()).unwrap());
-                name.clear();
-
-                if *data == '>' as u8 { tags_open -= 1 };
-
-            } else if *data == '/' as u8 {
-                tag_start = false;
-            } else {
-                name.push(*data);
-            }
-        }
+    for tag in &mut svg_tags {
+        canva.draw(tag);
     }
 
 
     println!("Hello, world!");
+
+    loop {
+        window.update_with_buffer(&canva.data, 1024, 1024).unwrap();
+    }
 }
