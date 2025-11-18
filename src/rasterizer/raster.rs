@@ -66,7 +66,7 @@ impl PathRasterizer {
         }
     }
 
-    pub fn build_lines_from_path(&mut self, commands: &[PathCommand], scale: f32, tolerance: f32) {
+    pub fn build_lines_from_path(&mut self, commands: &[PathCommand], scale_x: f32, scale_y: f32, tolerance: f32) {
         let max_area = tolerance * tolerance;
         let mut line_segments: Vec<(f32, f32, f32, f32)> = Vec::new();
 
@@ -160,19 +160,24 @@ impl PathRasterizer {
             }
         }
 
+        let scaled_x_min = x_min * scale_x;
+        let scaled_y_min = y_min * scale_y;
+        let scaled_x_max = x_max * scale_x;
+        let scaled_y_max = y_max * scale_y;
+
         for (x0, y0, x1, y1) in line_segments {
-            self.insert_line(x0, y0, x1, y1, scale);
+            self.insert_line(x0, y0, x1, y1, scale_x, scale_y);
         }
 
         for line in self.v_lines.iter_mut().chain(self.m_lines.iter_mut()) {
-            line.x0 -= x_min;
-            line.y0 -= y_min;
-            line.x1 -= x_min;
-            line.y1 -= y_min;
+            line.x0 -= scaled_x_min;
+            line.y0 -= scaled_y_min;
+            line.x1 -= scaled_x_min;
+            line.y1 -= scaled_y_min;
         }
 
-        let width = x_max - x_min;
-        let height = y_max - y_min;
+        let width = scaled_x_max - scaled_x_min;
+        let height = scaled_y_max - scaled_y_min;
 
         for line in self.v_lines.iter_mut().chain(self.m_lines.iter_mut()) {
 
@@ -190,8 +195,8 @@ impl PathRasterizer {
         }
 
         self.bounds = Bounds {
-            x: x_min,
-            y: y_min,
+            x: scaled_x_min,
+            y: scaled_y_min,
             width,
             height,
         };
@@ -281,7 +286,6 @@ impl PathRasterizer {
         let cos_phi = phi.cos();
         let sin_phi = phi.sin();
 
-        // Convert to center parameterization
         let dx = (start.x - end.x) / 2.0;
         let dy = (start.y - end.y) / 2.0;
 
@@ -339,7 +343,7 @@ impl PathRasterizer {
         }
     }
 
-    fn insert_line(&mut self, x0: f32, y0: f32, x1: f32, y1: f32, scale: f32) {
+    fn insert_line(&mut self, x0: f32, y0: f32, x1: f32, y1: f32, scale_x: f32, scale_y: f32) {
         if y0 == y1 {
             return;
         }
@@ -349,19 +353,19 @@ impl PathRasterizer {
         let is_degen = dx == 0.0 && dy == 0.0;
 
         let line = Line {
-            x0: x0 * scale,
-            y0: y0 * scale,
-            x1: x1 * scale,
-            y1: y1 * scale,
-            dx: dx * scale,
-            dy: dy * scale,
+            x0: x0 * scale_x,
+            y0: y0 * scale_y,
+            x1: x1 * scale_x,
+            y1: y1 * scale_y,
+            dx: dx * scale_x,
+            dy: dy * scale_y,
             dx_sign: if dx != 0.0 { dx.signum() as i32 } else { 0 },
             dy_sign: if dy != 0.0 { dy.signum() as i32 } else { 0 },
-            dt_dx: if dx != 0.0 { 1.0 / (dx * scale).abs() } else { f32::MAX },
-            dt_dy: if dy != 0.0 { 1.0 / (dy * scale).abs() } else { f32::MAX },
+            dt_dx: if dx != 0.0 { 1.0 / (dx * scale_x).abs() } else { f32::MAX },
+            dt_dy: if dy != 0.0 { 1.0 / (dy * scale_y).abs() } else { f32::MAX },
             is_degen,
-            abs_dx: (dx * scale).abs(),
-            abs_dy: (dy * scale).abs(),
+            abs_dx: (dx * scale_x).abs(),
+            abs_dy: (dy * scale_y).abs(),
             dx_is_zero: dx == 0.0,
             dy_is_zero: dy == 0.0,
         };

@@ -2,7 +2,7 @@ use crate::parser::tags::Tag;
 
 pub fn load_xml(data: &[u8]) -> Vec<Tag> {
 
-    let (idk, total_tags)  = load_xml_recursive(data, 0);
+    let (_, total_tags)  = load_xml_recursive(data, 0);
 
     total_tags
 }
@@ -19,7 +19,7 @@ pub fn load_xml_recursive(data: &[u8], idx: usize) -> (usize, Vec<Tag>) {
     let mut i = idx;
     while i < data.len() {
         if data[i] == '<' as u8 {
-            // Save any accumulated text content
+
             if !text_buffer.trim().is_empty() && tag.name != "" {
                 if !tag.text_content.is_empty() {
                     tag.text_content.push_str(&text_buffer);
@@ -30,15 +30,11 @@ pub fn load_xml_recursive(data: &[u8], idx: usize) -> (usize, Vec<Tag>) {
             text_buffer.clear();
 
             if data[i + 1] == '/' as u8 {
-                name_start = false;
-                params_start = false;
-
                 if tag.name != "" {
                     total_tags.push(tag.clone());
                     tag.clear();
                 }
 
-                // Find the end of this closing tag
                 while i < data.len() && data[i] != '>' as u8 {
                     i += 1;
                 }
@@ -46,7 +42,6 @@ pub fn load_xml_recursive(data: &[u8], idx: usize) -> (usize, Vec<Tag>) {
                 return (i + 1, total_tags);
 
             } else if data[i + 1] == '!' as u8 {
-                // Skip comments & CDATA
                 while i < data.len() && data[i] != '>' as u8 {
                     i += 1;
                 }
@@ -171,4 +166,7 @@ pub fn sanitize(s: String) -> String {
         .replace('\n', "")
         .replace('\t', "")
         .replace('\r', "")
+        .replace('/', "")
+        .replace('<', "")
+        .replace('>', "")
 }

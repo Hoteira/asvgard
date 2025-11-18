@@ -20,17 +20,17 @@ impl Canvas {
 }
 
 impl Canvas {
-    pub fn draw(&mut self, tag: &mut Tag, defs: &HashMap<String, Tag>) {
+    pub fn draw(&mut self, tag: &mut Tag, defs: &HashMap<String, Tag>, scale_x: f32, scale_y: f32, offset_x: f32, offset_y: f32) {
         match &*tag.name {
-            //"rect" => { draw_rect(tag, self) }
-            "path" => { draw_path(tag, defs, self) }
+            //"rect" => { draw_rect(tag, defs, self, scale_x, scale_y, offset_x, offset_y) }
+            "path" => { draw_path(tag, defs, self, scale_x, scale_y, offset_x, offset_y); }
             _ => {}
         }
 
         let children = tag.children.len();
 
         for i in 0..children {
-            self.draw(&mut tag.children[i], defs);
+            self.draw(&mut tag.children[i], defs, scale_x, scale_y, offset_x, offset_y);
         }
     }
 

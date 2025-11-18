@@ -3,18 +3,14 @@ use crate::parser::tags::Tag;
 use crate::rasterizer::canva::Canvas;
 use crate::rasterizer::dda::Rasterizer;
 use crate::rasterizer::raster::{PathRasterizer, Point};
-use crate::rasterizer::tags::lgradient::load_l_gradient;
-use crate::utils::color::{get_fill, get_stroke};
+use crate::utils::color::{get_fill, get_stroke, Paint};
 
 #[derive(Debug)]
 pub enum PathCommand {
     MoveTo(Point),
     LineTo(Point),
-
     CubicBezier(Point, Point, Point),
-
     QuadraticBezier(Point, Point),
-
     Arc {
         rx: f32,
         ry: f32,
@@ -23,18 +19,68 @@ pub enum PathCommand {
         sweep_flag: bool,
         end: Point,
     },
-
     ClosePath,
 }
+pub fn draw_path(
+    tag: &mut Tag, defs: &HashMap<String, Tag>, canvas: &mut Canvas,
+    scale_x: f32,
+    scale_y: f32,
+    offset_x: f32,
+    offset_y: f32)
+{
+    let mut fill = get_fill(tag).resolve(defs);
+    let stroke = get_stroke(tag).resolve(defs);
 
-pub fn draw_path(tag: &mut Tag, defs: &HashMap<String, Tag>, canvas: &mut Canvas) {
-    let stroke = get_stroke(tag);
-    let fill = get_fill(tag);
-    let d = tag.params.get("d").unwrap();
-    let mut d_path: Vec<PathCommand> = Vec::new();
+    fill.scale(scale_x, scale_y);
 
+    if fill.is_none() && stroke.is_none() {
+        return;
+    }
+
+    let d = match tag.params.get("d") {
+        Some(d) => d,
+        None => return,
+    };
+
+    let d_path = parse_path_data(d);
     let mut path_rasterizer = PathRasterizer::new();
 
+    path_rasterizer.build_lines_from_path(&d_path, scale_x, scale_y, 1.0);
+
+    let renderer = Rasterizer::new(
+        path_rasterizer.bounds.width.ceil() as usize,
+        path_rasterizer.bounds.height.ceil() as usize
+    );
+
+    let r_w = renderer.width;
+    let r_h = renderer.height;
+    let bitmap = renderer.draw(&path_rasterizer.v_lines, &path_rasterizer.m_lines).to_bitmap();
+
+    let color_map = generate_color_map(
+        &bitmap,
+        &fill,
+        r_w,
+        r_h,
+        path_rasterizer.bounds.x,
+        path_rasterizer.bounds.y,
+        path_rasterizer.bounds.width,
+        path_rasterizer.bounds.height
+    );
+
+    let draw_x = path_rasterizer.bounds.x + offset_x;
+    let draw_y = path_rasterizer.bounds.y + offset_y;
+
+    canvas.draw_buffer(
+        &color_map,
+        draw_x as i32,
+        draw_y as i32,
+        r_w,
+        r_h
+    );
+}
+
+fn parse_path_data(d: &str) -> Vec<PathCommand> {
+    let mut d_path: Vec<PathCommand> = Vec::new();
     let mut current_command = ' ';
     let mut current_number = String::new();
     let mut args: Vec<f32> = Vec::new();
@@ -51,7 +97,6 @@ pub fn draw_path(tag: &mut Tag, defs: &HashMap<String, Tag>, canvas: &mut Canvas
         }
 
         if c.is_alphabetic() {
-
             if !current_number.is_empty() {
                 args.push(current_number.parse::<f32>().unwrap());
                 current_number.clear();
@@ -89,36 +134,7 @@ pub fn draw_path(tag: &mut Tag, defs: &HashMap<String, Tag>, canvas: &mut Canvas
         }
     }
 
-    path_rasterizer.build_lines_from_path(&d_path, 1.0, 1.0);
-
-    let renderer = Rasterizer::new(
-        path_rasterizer.bounds.width.ceil() as usize,
-        path_rasterizer.bounds.height.ceil() as usize
-    );
-
-    let r_w = renderer.width;
-    let bitmap = renderer.draw(&path_rasterizer.v_lines, &path_rasterizer.m_lines).to_bitmap();
-
-    let mut color_map: Vec<u32> = Vec::with_capacity(bitmap.len());
-
-    if fill.1 != "" {
-        let tag = HashMap::get(&defs, &fill.1).unwrap();
-        let gradient = load_l_gradient(tag);
-
-
-
-        for i in 0..bitmap.len() {
-            color_map.push(((bitmap[i] as u32) << 24) | fill.0);
-        }
-    } else {
-        for i in 0..bitmap.len() {
-            color_map.push(((bitmap[i] as u32) << 24) | fill.0);
-        }
-    }
-
-
-
-    canvas.draw_buffer(&color_map, path_rasterizer.bounds.x as i32, path_rasterizer.bounds.y as i32, r_w, bitmap.len() / r_w );
+    d_path
 }
 
 fn process_command(
@@ -134,7 +150,6 @@ fn process_command(
     match cmd {
         'M' => {
             let mut i = 0;
-
             while i + 1 < args.len() {
                 let (x, y) = if is_relative {
                     (current_pos.x + args[i], current_pos.y + args[i + 1])
@@ -252,4 +267,48 @@ fn process_command(
     }
 
     args.clear();
+}
+
+fn generate_color_map(
+    bitmap: &[u8],
+    paint: &Paint,
+    width: usize,
+    height: usize,
+    bounds_x: f32,
+    bounds_y: f32,
+    bounds_width: f32,
+    bounds_height: f32,
+) -> Vec<u32> {
+    let mut color_map = Vec::with_capacity(bitmap.len());
+
+    match paint {
+        Paint::Solid(color) => {
+            let rgb = color & 0x00FFFFFF;
+            for &coverage in bitmap {
+                color_map.push(((coverage as u32) << 24) | rgb);
+            }
+        }
+        Paint::LinearGradient(_) => {
+
+            for y in 0..height {
+                for x in 0..width {
+                    let idx = y * width + x;
+                    let coverage = bitmap[idx];
+
+                    let svg_x = bounds_x + x as f32;
+                    let svg_y = bounds_y + y as f32;
+
+                    let color = paint.get_color_at(svg_x, svg_y);
+                    color_map.push(((coverage as u32) << 24) | (color & 0xFFFFFF));
+                }
+            }
+        }
+        Paint::None | Paint::Reference(_) => {
+            for _ in 0..bitmap.len() {
+                color_map.push(0x00000000);
+            }
+        }
+    }
+
+    color_map
 }
