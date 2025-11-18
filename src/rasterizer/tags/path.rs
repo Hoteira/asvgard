@@ -23,15 +23,14 @@ pub enum PathCommand {
 }
 pub fn draw_path(
     tag: &mut Tag, defs: &HashMap<String, Tag>, canvas: &mut Canvas,
-    scale_x: f32,
-    scale_y: f32,
+    scale: f32,
     offset_x: f32,
     offset_y: f32)
 {
     let mut fill = get_fill(tag).resolve(defs);
     let stroke = get_stroke(tag).resolve(defs);
 
-    fill.scale(scale_x, scale_y);
+    fill.scale(scale);
 
     if fill.is_none() && stroke.is_none() {
         return;
@@ -45,7 +44,7 @@ pub fn draw_path(
     let d_path = parse_path_data(d);
     let mut path_rasterizer = PathRasterizer::new();
 
-    path_rasterizer.build_lines_from_path(&d_path, scale_x, scale_y, 1.0);
+    path_rasterizer.build_lines_from_path(&d_path, scale, 1.0);
 
     let renderer = Rasterizer::new(
         path_rasterizer.bounds.width.ceil() as usize,

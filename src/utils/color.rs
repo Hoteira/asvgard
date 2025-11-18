@@ -4,16 +4,16 @@ use crate::parser::tags::Tag;
 #[derive(Debug, Clone)]
 pub enum Paint {
     Solid(u32),
-    LinearGradient(crate::rasterizer::tags::lgradient::LinearGradient),
+    LinearGradient(crate::rasterizer::tags::l_gradient::LinearGradient),
     Reference(String),
     None,
 }
 
 impl Paint {
 
-    pub fn scale(&mut self, scale_x: f32, scale_y: f32) {
+    pub fn scale(&mut self, scale: f32) {
         if let Paint::LinearGradient(gradient) = self {
-            gradient.scale(scale_x, scale_y);
+            gradient.scale(scale);
         }
     }
     pub fn resolve(&self, defs: &HashMap<String, Tag>) -> Paint {
@@ -21,7 +21,7 @@ impl Paint {
             Paint::Reference(id) => {
                 if let Some(tag) = defs.get(id) {
                     match tag.name.as_str() {
-                        "linearGradient" => Paint::LinearGradient(crate::rasterizer::tags::lgradient::load_linear_gradient(tag)),
+                        "linearGradient" => Paint::LinearGradient(crate::rasterizer::tags::l_gradient::load_linear_gradient(tag)),
                         "radialGradient" => {
                             Paint::None
                         }

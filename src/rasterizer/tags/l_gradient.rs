@@ -19,11 +19,11 @@ pub struct GradientStop {
 
 impl LinearGradient {
 
-    pub fn scale(&mut self, scale_x: f32, scale_y: f32) {
-        self.x1 *= scale_x;
-        self.y1 *= scale_y;
-        self.x2 *= scale_x;
-        self.y2 *= scale_y;
+    pub fn scale(&mut self, scale: f32) {
+        self.x1 *= scale;
+        self.y1 *= scale;
+        self.x2 *= scale;
+        self.y2 *= scale;
     }
 
     pub fn interpolate(&self, x: f32, y: f32) -> u32 {
