@@ -1,6 +1,5 @@
-use std::collections::HashMap;
 use crate::parser::tags::Tag;
-use crate::utils::color::{parse_color_value, Paint};
+use crate::utils::color::parse_color_value;
 
 #[derive(Debug, Clone)]
 pub struct LinearGradient {
@@ -18,7 +17,6 @@ pub struct GradientStop {
 }
 
 impl LinearGradient {
-
     pub fn scale(&mut self, scale: f32) {
         self.x1 *= scale;
         self.y1 *= scale;
@@ -48,7 +46,6 @@ impl LinearGradient {
         let mut t = (px * dx + py * dy) / len_sq;
 
         t = t.clamp(0.0, 1.0);
-
 
         if t <= self.stops[0].offset {
             return self.stops[0].color;
@@ -97,27 +94,39 @@ fn blend_colors(color1: u32, color2: u32, t: f32) -> u32 {
 }
 
 pub fn load_linear_gradient(tag: &Tag) -> LinearGradient {
-    let x1 = tag.params.get("x1")
+    let x1 = tag
+        .params
+        .get("x1")
         .and_then(|s| s.parse::<f32>().ok())
         .unwrap_or(0.0);
-    let y1 = tag.params.get("y1")
+    let y1 = tag
+        .params
+        .get("y1")
         .and_then(|s| s.parse::<f32>().ok())
         .unwrap_or(0.0);
-    let x2 = tag.params.get("x2")
+    let x2 = tag
+        .params
+        .get("x2")
         .and_then(|s| s.parse::<f32>().ok())
         .unwrap_or(0.0);
-    let y2 = tag.params.get("y2")
+    let y2 = tag
+        .params
+        .get("y2")
         .and_then(|s| s.parse::<f32>().ok())
         .unwrap_or(0.0);
 
     let mut stops = Vec::new();
     for child in &tag.children {
         if child.name == "stop" {
-            let offset = child.params.get("offset")
+            let offset = child
+                .params
+                .get("offset")
                 .and_then(|s| s.trim_end_matches('%').parse::<f32>().ok())
                 .unwrap_or(0.0);
 
-            let color = child.params.get("stop-color")
+            let color = child
+                .params
+                .get("stop-color")
                 .map(|c| parse_color_value(c))
                 .unwrap_or(0x000000);
 
@@ -127,7 +136,16 @@ pub fn load_linear_gradient(tag: &Tag) -> LinearGradient {
         }
     }
 
-    println!("Linear gradient: x1={}, y1={}, x2={}, y2={}, stops={:?}", x1, y1, x2, y2, stops);
+    println!(
+        "Linear gradient: x1={}, y1={}, x2={}, y2={}, stops={:?}",
+        x1, y1, x2, y2, stops
+    );
 
-    LinearGradient { x1, y1, x2, y2, stops }
+    LinearGradient {
+        x1,
+        y1,
+        x2,
+        y2,
+        stops,
+    }
 }

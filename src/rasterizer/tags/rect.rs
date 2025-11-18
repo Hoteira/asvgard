@@ -1,10 +1,17 @@
-use std::collections::HashMap;
 use crate::parser::tags::Tag;
 use crate::rasterizer::canva::Canvas;
-use crate::utils::color::{get_fill, get_stroke, Paint};
+use crate::utils::color::{get_fill, get_stroke};
 use crate::utils::coords::{get_height, get_width, get_x, get_y};
+use std::collections::HashMap;
 
-pub fn draw_rect(tag: &mut Tag, defs: &HashMap<String, Tag>, canvas: &mut Canvas, scale: f32, offset_x: f32, offset_y: f32) {
+pub fn draw_rect(
+    tag: &mut Tag,
+    defs: &HashMap<String, Tag>,
+    canvas: &mut Canvas,
+    scale: f32,
+    offset_x: f32,
+    offset_y: f32,
+) {
     let width = get_width(tag);
     let height = get_height(tag);
     let x = get_x(tag);
@@ -24,7 +31,6 @@ pub fn draw_rect(tag: &mut Tag, defs: &HashMap<String, Tag>, canvas: &mut Canvas
                 let px = j + scaled_x;
                 let py = i + scaled_y;
                 if px < canvas.width && py < canvas.height {
-
                     let svg_x = x as f32 + (j as f32 / scale);
                     let svg_y = y as f32 + (i as f32 / scale);
                     let color = fill.get_color_at(svg_x, svg_y);

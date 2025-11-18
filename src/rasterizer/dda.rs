@@ -10,16 +10,19 @@ pub struct Rasterizer {
 
 impl Rasterizer {
     pub fn new(width: usize, height: usize) -> Self {
-        Self { width, height, coverage_buffer: vec![0.0; width * height + 1] }
+        Self {
+            width,
+            height,
+            coverage_buffer: vec![0.0; width * height + 1],
+        }
     }
 
     pub fn draw(mut self, v_lines: &[Line], m_lines: &[Line]) -> Self {
-
-        for (i, line) in v_lines.iter().enumerate() {
+        for line in v_lines.iter() {
             self.v_line(line);
         }
 
-        for (i, line) in m_lines.iter().enumerate() {
+        for line in m_lines.iter() {
             self.m_line(line);
         }
 
@@ -27,12 +30,15 @@ impl Rasterizer {
     }
 
     fn v_line(&mut self, line: &Line) {
-
         let x = line.x0.floor() as i32;
         let mut y = line.y0.floor() as i32;
         let y_end = line.y1.floor() as i32;
 
-        let mut y_cross = if line.dy_sign > 0 { y as f32 + 1.0 } else { y as f32 };
+        let mut y_cross = if line.dy_sign > 0 {
+            y as f32 + 1.0
+        } else {
+            y as f32
+        };
         let mut y_prev = line.y0;
 
         let mid_x = (line.x0 - x as f32).clamp(0.0, 1.0);
@@ -75,13 +81,23 @@ impl Rasterizer {
         let x_end = x1.floor() as i32;
         let y_end = y1.floor() as i32;
 
-        if line.is_degen { return; }
+        if line.is_degen {
+            return;
+        }
 
         let mut x_cross = if line.dx_sign > 0 { x + 1 } else { x };
         let mut y_cross = if line.dy_sign > 0 { y + 1 } else { y };
 
-        let mut t_max_x = if !line.dx_is_zero { (x_cross as f32 - x0) / dx } else { f32::MAX };
-        let mut t_max_y = if !line.dy_is_zero { (y_cross as f32 - y0) / dy } else { f32::MAX };
+        let mut t_max_x = if !line.dx_is_zero {
+            (x_cross as f32 - x0) / dx
+        } else {
+            f32::MAX
+        };
+        let mut t_max_y = if !line.dy_is_zero {
+            (y_cross as f32 - y0) / dy
+        } else {
+            f32::MAX
+        };
 
         let mut x_prev = x0;
         let mut y_prev = y0;
@@ -123,16 +139,13 @@ impl Rasterizer {
 
             if t_max_x < t_max_y {
                 x += line.dx_sign;
-                x_cross += line.dx_sign;
                 t_max_x += dt_dx;
             } else {
                 y += line.dy_sign;
-                y_cross += line.dy_sign;
                 t_max_y += dt_dy;
             }
         }
     }
-
 
     fn add_coverage(&mut self, idx: usize, height: f32, mid_x: f32) {
         let m = height * mid_x;
@@ -145,7 +158,6 @@ impl Rasterizer {
         }
     }
 
-
     pub fn to_bitmap(&self) -> Vec<u8> {
         let mut out = vec![0u8; self.width * self.height];
         let mut acc = 0.0f32;
@@ -154,7 +166,7 @@ impl Rasterizer {
             acc += self.coverage_buffer[i];
             out[i] = (acc.abs().clamp(0.0, 1.0) * 255.0) as u8;
         }
-        
+
         out
     }
 }

@@ -1,16 +1,15 @@
-use std::collections::HashMap;
 use crate::parser::tags::Tag;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub enum Paint {
     Solid(u32),
-    LinearGradient(crate::rasterizer::tags::l_gradient::LinearGradient),
+    LinearGradient(crate::rasterizer::tags::lineargradient::LinearGradient),
     Reference(String),
     None,
 }
 
 impl Paint {
-
     pub fn scale(&mut self, scale: f32) {
         if let Paint::LinearGradient(gradient) = self {
             gradient.scale(scale);
@@ -21,10 +20,10 @@ impl Paint {
             Paint::Reference(id) => {
                 if let Some(tag) = defs.get(id) {
                     match tag.name.as_str() {
-                        "linearGradient" => Paint::LinearGradient(crate::rasterizer::tags::l_gradient::load_linear_gradient(tag)),
-                        "radialGradient" => {
-                            Paint::None
-                        }
+                        "linearGradient" => Paint::LinearGradient(
+                            crate::rasterizer::tags::lineargradient::load_linear_gradient(tag),
+                        ),
+                        "radialGradient" => Paint::None,
                         _ => Paint::None,
                     }
                 } else {
@@ -38,9 +37,7 @@ impl Paint {
     pub fn get_color_at(&self, x: f32, y: f32) -> u32 {
         match self {
             Paint::Solid(color) => *color,
-            Paint::LinearGradient(gradient) => {
-                gradient.interpolate(x, y)
-            }
+            Paint::LinearGradient(gradient) => gradient.interpolate(x, y),
             Paint::None | Paint::Reference(_) => 0x00000000,
         }
     }
@@ -50,22 +47,21 @@ impl Paint {
     }
 }
 
-
 #[inline]
 pub fn get_fill(tag: &Tag) -> Paint {
-    tag.params.get("fill")
+    tag.params
+        .get("fill")
         .map(|c| parse_paint(c))
         .unwrap_or(Paint::Solid(0xFF000000)) // Default to black
 }
 
-
 #[inline]
 pub fn get_stroke(tag: &Tag) -> Paint {
-    tag.params.get("stroke")
+    tag.params
+        .get("stroke")
         .map(|c| parse_paint(c))
         .unwrap_or(Paint::None)
 }
-
 
 fn parse_paint(s: &str) -> Paint {
     let s = s.trim().to_lowercase();
@@ -82,8 +78,7 @@ fn parse_paint(s: &str) -> Paint {
     Paint::Solid(parse_color_value(&s))
 }
 
-
-pub fn parse_color_value(c: &str) -> u32 {
+pub(crate) fn parse_color_value(c: &str) -> u32 {
     let c = c.trim().to_lowercase();
 
     if let Some(named_color) = named(&c) {
@@ -107,7 +102,8 @@ pub fn parse_color_value(c: &str) -> u32 {
 
 fn parse_hsl(hsl: &str) -> u32 {
     let is_hsla = hsl.starts_with("hsla(");
-    let inner = hsl.trim_start_matches("hsl(")
+    let inner = hsl
+        .trim_start_matches("hsl(")
         .trim_start_matches("hsla(")
         .trim_end_matches(')');
 
@@ -118,8 +114,18 @@ fn parse_hsl(hsl: &str) -> u32 {
     }
 
     let h = parts[0].parse::<f32>().ok().unwrap_or(0.0);
-    let s = parts[1].trim_end_matches('%').parse::<f32>().ok().unwrap_or(0.0) / 100.0;
-    let l = parts[2].trim_end_matches('%').parse::<f32>().ok().unwrap_or(0.0) / 100.0;
+    let s = parts[1]
+        .trim_end_matches('%')
+        .parse::<f32>()
+        .ok()
+        .unwrap_or(0.0)
+        / 100.0;
+    let l = parts[2]
+        .trim_end_matches('%')
+        .parse::<f32>()
+        .ok()
+        .unwrap_or(0.0)
+        / 100.0;
 
     let a = if is_hsla && parts.len() >= 4 {
         parse_alpha(parts[3])
@@ -143,23 +149,27 @@ fn hsl_to_rgb(h: f32, s: f32, l: f32) -> (u8, u8, u8) {
 
     let p = 2.0 * l - q;
 
-    let r = hue_to_rgb(p, q, h + 1.0/3.0);
+    let r = hue_to_rgb(p, q, h + 1.0 / 3.0);
     let g = hue_to_rgb(p, q, h);
-    let b = hue_to_rgb(p, q, h - 1.0/3.0);
+    let b = hue_to_rgb(p, q, h - 1.0 / 3.0);
 
     ((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8)
 }
 
 fn hue_to_rgb(p: f32, q: f32, mut t: f32) -> f32 {
-    if t < 0.0 { t += 1.0; }
-    if t > 1.0 { t -= 1.0; }
+    if t < 0.0 {
+        t += 1.0;
+    }
+    if t > 1.0 {
+        t -= 1.0;
+    }
 
-    if t < 1.0/6.0 {
+    if t < 1.0 / 6.0 {
         p + (q - p) * 6.0 * t
-    } else if t < 1.0/2.0 {
+    } else if t < 1.0 / 2.0 {
         q
-    } else if t < 2.0/3.0 {
-        p + (q - p) * (2.0/3.0 - t) * 6.0
+    } else if t < 2.0 / 3.0 {
+        p + (q - p) * (2.0 / 3.0 - t) * 6.0
     } else {
         p
     }
@@ -167,7 +177,8 @@ fn hue_to_rgb(p: f32, q: f32, mut t: f32) -> f32 {
 
 fn parse_rgb(rgb: &str) -> u32 {
     let is_rgba = rgb.starts_with("rgba(");
-    let inner = rgb.trim_start_matches("rgb(")
+    let inner = rgb
+        .trim_start_matches("rgb(")
         .trim_start_matches("rgba(")
         .trim_end_matches(')');
 
@@ -223,9 +234,7 @@ fn parse_hex(hex: &str) -> u32 {
             let rgb = u32::from_str_radix(hex, 16).ok().unwrap_or(0);
             0xFF000000 | rgb
         }
-        8 => {
-            u32::from_str_radix(hex, 16).ok().unwrap_or(0xFF000000)
-        }
+        8 => u32::from_str_radix(hex, 16).ok().unwrap_or(0xFF000000),
         _ => 0xFF000000,
     }
 }

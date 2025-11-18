@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use crate::parser::tags::Tag;
 use crate::rasterizer::canva::Canvas;
 use crate::rasterizer::dda::Rasterizer;
 use crate::rasterizer::raster::{PathRasterizer, Point};
-use crate::utils::color::{get_fill, get_stroke, Paint};
+use crate::utils::color::{Paint, get_fill, get_stroke};
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum PathCommand {
@@ -22,11 +22,13 @@ pub enum PathCommand {
     ClosePath,
 }
 pub fn draw_path(
-    tag: &mut Tag, defs: &HashMap<String, Tag>, canvas: &mut Canvas,
+    tag: &mut Tag,
+    defs: &HashMap<String, Tag>,
+    canvas: &mut Canvas,
     scale: f32,
     offset_x: f32,
-    offset_y: f32)
-{
+    offset_y: f32,
+) {
     let mut fill = get_fill(tag).resolve(defs);
     let stroke = get_stroke(tag).resolve(defs);
 
@@ -44,16 +46,18 @@ pub fn draw_path(
     let d_path = parse_path_data(d);
     let mut path_rasterizer = PathRasterizer::new();
 
-    path_rasterizer.build_lines_from_path(&d_path, scale, 1.0);
+    path_rasterizer.build_lines_from_path(&d_path, scale, 0.5);
 
     let renderer = Rasterizer::new(
         path_rasterizer.bounds.width.ceil() as usize,
-        path_rasterizer.bounds.height.ceil() as usize
+        path_rasterizer.bounds.height.ceil() as usize,
     );
 
     let r_w = renderer.width;
     let r_h = renderer.height;
-    let bitmap = renderer.draw(&path_rasterizer.v_lines, &path_rasterizer.m_lines).to_bitmap();
+    let bitmap = renderer
+        .draw(&path_rasterizer.v_lines, &path_rasterizer.m_lines)
+        .to_bitmap();
 
     let color_map = generate_color_map(
         &bitmap,
@@ -62,20 +66,12 @@ pub fn draw_path(
         r_h,
         path_rasterizer.bounds.x,
         path_rasterizer.bounds.y,
-        path_rasterizer.bounds.width,
-        path_rasterizer.bounds.height
     );
 
     let draw_x = path_rasterizer.bounds.x + offset_x;
     let draw_y = path_rasterizer.bounds.y + offset_y;
 
-    canvas.draw_buffer(
-        &color_map,
-        draw_x as i32,
-        draw_y as i32,
-        r_w,
-        r_h
-    );
+    canvas.draw_buffer(&color_map, draw_x as i32, draw_y as i32, r_w, r_h);
 }
 
 fn parse_path_data(d: &str) -> Vec<PathCommand> {
@@ -102,7 +98,13 @@ fn parse_path_data(d: &str) -> Vec<PathCommand> {
             }
 
             if current_command != ' ' && !args.is_empty() {
-                process_command(current_command, &mut args, &mut d_path, &mut current_pos, &mut subpath_start);
+                process_command(
+                    current_command,
+                    &mut args,
+                    &mut d_path,
+                    &mut current_pos,
+                    &mut subpath_start,
+                );
             }
 
             current_command = c;
@@ -129,7 +131,13 @@ fn parse_path_data(d: &str) -> Vec<PathCommand> {
 
     if current_command != ' ' {
         if current_command == 'Z' || current_command == 'z' || !args.is_empty() {
-            process_command(current_command, &mut args, &mut d_path, &mut current_pos, &mut subpath_start);
+            process_command(
+                current_command,
+                &mut args,
+                &mut d_path,
+                &mut current_pos,
+                &mut subpath_start,
+            );
         }
     }
 
@@ -141,7 +149,7 @@ fn process_command(
     args: &mut Vec<f32>,
     d_path: &mut Vec<PathCommand>,
     current_pos: &mut Point,
-    subpath_start: &mut Point
+    subpath_start: &mut Point,
 ) {
     let is_relative = command.is_lowercase();
     let cmd = command.to_ascii_uppercase();
@@ -183,15 +191,29 @@ fn process_command(
         }
         'H' => {
             for &val in args.iter() {
-                let x = if is_relative { current_pos.x + val } else { val };
-                d_path.push(PathCommand::LineTo(Point { x, y: current_pos.y }));
+                let x = if is_relative {
+                    current_pos.x + val
+                } else {
+                    val
+                };
+                d_path.push(PathCommand::LineTo(Point {
+                    x,
+                    y: current_pos.y,
+                }));
                 current_pos.x = x;
             }
         }
         'V' => {
             for &val in args.iter() {
-                let y = if is_relative { current_pos.y + val } else { val };
-                d_path.push(PathCommand::LineTo(Point { x: current_pos.x, y }));
+                let y = if is_relative {
+                    current_pos.y + val
+                } else {
+                    val
+                };
+                d_path.push(PathCommand::LineTo(Point {
+                    x: current_pos.x,
+                    y,
+                }));
                 current_pos.y = y;
             }
         }
@@ -200,18 +222,28 @@ fn process_command(
             while i + 5 < args.len() {
                 let (x1, y1, x2, y2, x, y) = if is_relative {
                     (
-                        current_pos.x + args[i], current_pos.y + args[i + 1],
-                        current_pos.x + args[i + 2], current_pos.y + args[i + 3],
-                        current_pos.x + args[i + 4], current_pos.y + args[i + 5]
+                        current_pos.x + args[i],
+                        current_pos.y + args[i + 1],
+                        current_pos.x + args[i + 2],
+                        current_pos.y + args[i + 3],
+                        current_pos.x + args[i + 4],
+                        current_pos.y + args[i + 5],
                     )
                 } else {
-                    (args[i], args[i + 1], args[i + 2], args[i + 3], args[i + 4], args[i + 5])
+                    (
+                        args[i],
+                        args[i + 1],
+                        args[i + 2],
+                        args[i + 3],
+                        args[i + 4],
+                        args[i + 5],
+                    )
                 };
 
                 d_path.push(PathCommand::CubicBezier(
                     Point { x: x1, y: y1 },
                     Point { x: x2, y: y2 },
-                    Point { x, y }
+                    Point { x, y },
                 ));
                 *current_pos = Point { x, y };
                 i += 6;
@@ -222,8 +254,10 @@ fn process_command(
             while i + 3 < args.len() {
                 let (x1, y1, x, y) = if is_relative {
                     (
-                        current_pos.x + args[i], current_pos.y + args[i + 1],
-                        current_pos.x + args[i + 2], current_pos.y + args[i + 3]
+                        current_pos.x + args[i],
+                        current_pos.y + args[i + 1],
+                        current_pos.x + args[i + 2],
+                        current_pos.y + args[i + 3],
                     )
                 } else {
                     (args[i], args[i + 1], args[i + 2], args[i + 3])
@@ -231,7 +265,7 @@ fn process_command(
 
                 d_path.push(PathCommand::QuadraticBezier(
                     Point { x: x1, y: y1 },
-                    Point { x, y }
+                    Point { x, y },
                 ));
                 *current_pos = Point { x, y };
                 i += 4;
@@ -275,8 +309,6 @@ fn generate_color_map(
     height: usize,
     bounds_x: f32,
     bounds_y: f32,
-    bounds_width: f32,
-    bounds_height: f32,
 ) -> Vec<u32> {
     let mut color_map = Vec::with_capacity(bitmap.len());
 
@@ -288,7 +320,6 @@ fn generate_color_map(
             }
         }
         Paint::LinearGradient(_) => {
-
             for y in 0..height {
                 for x in 0..width {
                     let idx = y * width + x;
