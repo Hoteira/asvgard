@@ -1,7 +1,7 @@
 use std::f32;
 use crate::rasterizer::tags::path::PathCommand;
 
-// Adapted from my previous rasterizer TiTanFont
+// Adapted from TiTanFont
 
 #[derive(Debug, Clone, Copy)]
 pub struct Point {

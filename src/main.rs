@@ -1,18 +1,19 @@
-
 mod parser;
 mod rasterizer;
 mod utils;
 
 use std::collections::HashMap;
+use std::time::Instant;
 use minifb;
 use minifb::{Window, WindowOptions};
 use crate::parser::tags::Tag;
 use crate::utils::get_id;
+use crate::utils::transform::Transform;
 
 fn main() {
-    let svg_data = include_bytes!("../icon.svg");
+    let svg_data = include_bytes!("../bunny.svg");
 
-    let canvas_width = 512;  
+    let canvas_width = 512;
     let canvas_height = 512;
 
     let mut window = Window::new(
@@ -30,11 +31,16 @@ fn main() {
     let mut defs_map: HashMap<String, Tag> = HashMap::new();
     traverse_recursive(&mut defs_map, &svg_tags[0]);
 
-    let (scale, offset_x, offset_y) = get_svg_transform(&svg_tags[0], canvas_width, canvas_height);
+    let transform = get_svg_transform(&svg_tags[0], canvas_width, canvas_height);
 
+    let s = Instant::now();
     for tag in &mut svg_tags {
-        canva.draw(tag, &defs_map, scale, offset_x, offset_y);
+        canva.draw(tag, &defs_map, &transform);
     }
+    let e = s.elapsed();
+    println!("Time elapsed: {:?}", e);
+
+    canva.render();
 
     println!("Rendered!");
 
@@ -44,7 +50,6 @@ fn main() {
 }
 
 pub fn traverse_recursive(defs: &mut HashMap<String, Tag>, start: &Tag) {
-
     if get_id(start).is_some() {
         defs.insert(get_id(start).unwrap().clone(), start.clone());
     }
@@ -54,7 +59,7 @@ pub fn traverse_recursive(defs: &mut HashMap<String, Tag>, start: &Tag) {
     }
 }
 
-pub fn get_svg_transform(svg_tag: &Tag, canvas_width: usize, canvas_height: usize) -> (f32, f32, f32) {
+pub fn get_svg_transform(svg_tag: &Tag, canvas_width: usize, canvas_height: usize) -> Transform {
     let viewbox = svg_tag.params.get("viewBox");
 
     if let Some(vb) = viewbox {
@@ -70,9 +75,10 @@ pub fn get_svg_transform(svg_tag: &Tag, canvas_width: usize, canvas_height: usiz
 
             let scale_x = canvas_width as f32 / vb_width;
             let scale_y = canvas_height as f32 / vb_height;
-            let scale = scale_x.min(scale_y); 
+            let scale = scale_x.min(scale_y);
 
-            return (scale, -vb_x * scale, -vb_y * scale);
+            return Transform::scale(scale, scale)
+                .then(&Transform::translate(-vb_x * scale, -vb_y * scale));
         }
     }
 
@@ -85,7 +91,6 @@ pub fn get_svg_transform(svg_tag: &Tag, canvas_width: usize, canvas_height: usiz
 
     let scale_x = canvas_width as f32 / svg_width;
     let scale_y = canvas_height as f32 / svg_height;
-    let scale = scale_x.min(scale_y);
 
-    (scale, 0.0, 0.0)
+    Transform::scale(scale_x, scale_y)
 }
