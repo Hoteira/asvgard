@@ -40,8 +40,6 @@ fn main() {
     let e = s.elapsed();
     println!("Time elapsed: {:?}", e);
 
-    canva.render();
-
     println!("Rendered!");
 
     loop {

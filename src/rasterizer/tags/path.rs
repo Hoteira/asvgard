@@ -6,7 +6,9 @@ use crate::utils::color::{Paint, get_fill, get_stroke};
 use crate::rasterizer::tags::clippath::{get_clip_path_id, ClipMask};
 use crate::utils::transform::Transform;
 use std::collections::HashMap;
-use crate::rasterizer::map::Map;
+use crate::rasterizer::stroke::stroke_to_lines;
+use crate::rasterizer::strokeraster::StrokeRasterizer;
+use crate::utils::effects::get_stroke_width;
 
 #[derive(Debug)]
 pub enum PathCommand {
@@ -28,7 +30,7 @@ pub enum PathCommand {
 pub fn draw_path(
     tag: &mut Tag,
     defs: &HashMap<String, Tag>,
-    map: &mut Map,
+    map: &mut Canvas,
     transform: &Transform
 ) {
     let mut fill = get_fill(tag).resolve(defs);
@@ -45,12 +47,23 @@ pub fn draw_path(
 
     let transformed_path = apply_transform_to_path(&d_path, transform);
 
+    let mut stroke = get_stroke(tag).resolve(defs);
+    let stroke_width = get_stroke_width(tag);
+
     let mut path_rasterizer = PathRasterizer::new();
     path_rasterizer.build_lines_from_path(&transformed_path, 1.0, 1.0);
+
+    let mut stroke_rasterizer = StrokeRasterizer::new();
+    stroke_rasterizer.build_lines_from_path(&transformed_path, 1.0, 1.0, stroke_width);
 
     let renderer = Rasterizer::new(
         path_rasterizer.bounds.width.ceil() as usize + 1,
         path_rasterizer.bounds.height.ceil() as usize,
+    );
+    
+    let stroke_renderer = Rasterizer::new(
+        path_rasterizer.bounds.width.ceil() as usize + 1 + stroke_width.ceil() as usize,
+        path_rasterizer.bounds.height.ceil() as usize + stroke_width.ceil() as usize,
     );
 
     let r_w = renderer.width;
@@ -70,6 +83,33 @@ pub fn draw_path(
         path_rasterizer.bounds.y,
     );
 
+
+    let s_w = stroke_renderer.width;
+    let s_h = stroke_renderer.height;
+
+    let stroke_lines = stroke_to_lines(&path_rasterizer.m_lines, stroke_width);
+    let bitmap = stroke_renderer.draw(&[], &stroke_lines).to_bitmap();
+    
+    let (sx, sy) = transform.get_scale();
+
+    stroke.scale(sx.min(sy));
+
+    let mut color_map = generate_color_map(
+        &bitmap,
+        &stroke,
+        s_w,
+        s_h,
+        path_rasterizer.bounds.x,
+        path_rasterizer.bounds.y,
+    );
+    
+    
+    
+    
+    
+    
+    
+
     if let Some(clip_id) = get_clip_path_id(tag) {
         if let Some(clippath_tag) = defs.get(&clip_id) {
             if clippath_tag.name == "clipPath" {
@@ -86,8 +126,8 @@ pub fn draw_path(
         }
     }
 
-    let draw_x = path_rasterizer.bounds.x.floor() as usize;
-    let draw_y = path_rasterizer.bounds.y.floor() as usize;
+    let draw_x = path_rasterizer.bounds.x.round() as usize;
+    let draw_y = path_rasterizer.bounds.y.round() as usize;
 
     map.add_buffer(
         &color_map,
@@ -96,6 +136,8 @@ pub fn draw_path(
         r_w,
         r_h
     );
+
+
 }
 
 pub fn parse_path_data(d: &str) -> Vec<PathCommand> {
@@ -338,7 +380,7 @@ pub(crate) fn generate_color_map(
                 color_map.push(((coverage as u32) << 24) | rgb);
             }
         }
-        
+
         Paint::LinearGradient(_) => {
             for y in 0..height {
                 for x in 0..width {

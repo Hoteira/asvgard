@@ -1,73 +1,23 @@
 use std::f32;
+use crate::rasterizer::raster::{Bounds, Line, Point, Segment};
 use crate::rasterizer::tags::path::PathCommand;
 
-// Adapted from TiTanFont
-
-#[derive(Debug, Clone, Copy)]
-pub struct Point {
-    pub x: f32,
-    pub y: f32,
-}
-
-#[derive(Debug, Clone)]
-pub struct Line {
-    pub x0: f32,
-    pub y0: f32,
-    pub x1: f32,
-    pub y1: f32,
-    pub dx: f32,
-    pub dy: f32,
-    pub dx_sign: i32,
-    pub dy_sign: i32,
-    pub dt_dx: f32,
-    pub dt_dy: f32,
-    pub is_degen: bool,
-    pub abs_dx: f32,
-    pub abs_dy: f32,
-    pub dx_is_zero: bool,
-    pub dy_is_zero: bool,
-}
-
-pub struct Segment {
-    pub(crate) a_x: f32,
-    pub(crate) a_y: f32,
-    pub(crate) at: f32,
-    pub(crate) c_x: f32,
-    pub(crate) c_y: f32,
-    pub(crate) ct: f32,
-}
-
-impl Segment {
-    pub(crate) fn new(a_x: f32, a_y: f32, at: f32, c_x: f32, c_y: f32, ct: f32) -> Self {
-        Self { a_x, a_y, at, c_x, c_y, ct }
-    }
-}
-
-pub struct PathRasterizer {
-    pub v_lines: Vec<Line>,
-    pub m_lines: Vec<Line>,
+pub struct StrokeRasterizer {
+    pub lines: Vec<Line>,
     pub bounds: Bounds,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Bounds {
-    pub x: f32,
-    pub y: f32,
-    pub width: f32,
-    pub height: f32,
-}
-
-impl PathRasterizer {
+impl StrokeRasterizer {
     pub fn new() -> Self {
         Self {
-            v_lines: Vec::new(),
-            m_lines: Vec::new(),
+            lines: Vec::new(),
             bounds: Bounds { x: 0.0, y: 0.0, width: 0.0, height: 0.0 },
         }
     }
 
-    pub fn build_lines_from_path(&mut self, commands: &[PathCommand], scale: f32, tolerance: f32) {
+    pub fn build_lines_from_path(&mut self, commands: &[PathCommand], scale: f32, tolerance: f32, stroke_width: f32) {
         let max_area = tolerance * tolerance;
+        let half_width = stroke_width / 2.0;
         let mut line_segments: Vec<(f32, f32, f32, f32)> = Vec::new();
 
         let mut x_min = f32::MAX;
@@ -84,18 +34,18 @@ impl PathRasterizer {
                     current_pos = *p;
                     subpath_start = *p;
 
-                    x_min = x_min.min(p.x);
-                    x_max = x_max.max(p.x);
-                    y_min = y_min.min(p.y);
-                    y_max = y_max.max(p.y);
+                    x_min = x_min.min(p.x - half_width);
+                    x_max = x_max.max(p.x + half_width);
+                    y_min = y_min.min(p.y - half_width);
+                    y_max = y_max.max(p.y + half_width);
                 }
                 PathCommand::LineTo(p) => {
                     line_segments.push((current_pos.x, current_pos.y, p.x, p.y));
 
-                    x_min = x_min.min(p.x);
-                    x_max = x_max.max(p.x);
-                    y_min = y_min.min(p.y);
-                    y_max = y_max.max(p.y);
+                    x_min = x_min.min(p.x - half_width);
+                    x_max = x_max.max(p.x + half_width);
+                    y_min = y_min.min(p.y - half_width);
+                    y_max = y_max.max(p.y + half_width);
 
                     current_pos = *p;
                 }
@@ -108,10 +58,10 @@ impl PathRasterizer {
                         &mut line_segments
                     );
 
-                    x_min = x_min.min(cp.x).min(end.x);
-                    x_max = x_max.max(cp.x).max(end.x);
-                    y_min = y_min.min(cp.y).min(end.y);
-                    y_max = y_max.max(cp.y).max(end.y);
+                    x_min = x_min.min(cp.x - half_width).min(end.x - half_width);
+                    x_max = x_max.max(cp.x + half_width).max(end.x + half_width);
+                    y_min = y_min.min(cp.y - half_width).min(end.y - half_width);
+                    y_max = y_max.max(cp.y + half_width).max(end.y + half_width);
 
                     current_pos = *end;
                 }
@@ -125,10 +75,10 @@ impl PathRasterizer {
                         &mut line_segments
                     );
 
-                    x_min = x_min.min(cp1.x).min(cp2.x).min(end.x);
-                    x_max = x_max.max(cp1.x).max(cp2.x).max(end.x);
-                    y_min = y_min.min(cp1.y).min(cp2.y).min(end.y);
-                    y_max = y_max.max(cp1.y).max(cp2.y).max(end.y);
+                    x_min = x_min.min(cp1.x - half_width).min(cp2.x - half_width).min(end.x - half_width);
+                    x_max = x_max.max(cp1.x + half_width).max(cp2.x + half_width).max(end.x + half_width);
+                    y_min = y_min.min(cp1.y - half_width).min(cp2.y - half_width).min(end.y - half_width);
+                    y_max = y_max.max(cp1.y + half_width).max(cp2.y + half_width).max(end.y + half_width);
 
                     current_pos = *end;
                 }
@@ -144,10 +94,10 @@ impl PathRasterizer {
                         &mut line_segments
                     );
 
-                    x_min = x_min.min(end.x);
-                    x_max = x_max.max(end.x);
-                    y_min = y_min.min(end.y);
-                    y_max = y_max.max(end.y);
+                    x_min = x_min.min(end.x - half_width);
+                    x_max = x_max.max(end.x + half_width);
+                    y_min = y_min.min(end.y - half_width);
+                    y_max = y_max.max(end.y + half_width);
 
                     current_pos = *end;
                 }
@@ -169,8 +119,7 @@ impl PathRasterizer {
             self.insert_line(x0, y0, x1, y1, scale);
         }
 
-        for line in self.v_lines.iter_mut()
-            .chain(self.m_lines.iter_mut())
+        for line in self.lines.iter_mut()
         {
             line.x0 -= scaled_x_min;
             line.y0 -= scaled_y_min;
@@ -181,8 +130,7 @@ impl PathRasterizer {
         let width = scaled_x_max - scaled_x_min;
         let height = scaled_y_max - scaled_y_min;
 
-        for line in self.v_lines.iter_mut()
-            .chain(self.m_lines.iter_mut())
+        for line in self.lines.iter_mut()
         {
 
             line.dx = line.x1 - line.x0;
@@ -352,10 +300,6 @@ impl PathRasterizer {
         let dx = x1 - x0;
         let dy = y1 - y0;
         let is_degen = dx == 0.0 && dy == 0.0;
-        
-        if dy == 0.0 {
-            return;
-        }
 
         let line = Line {
             x0: x0 * scale,
@@ -375,10 +319,6 @@ impl PathRasterizer {
             dy_is_zero: dy == 0.0,
         };
 
-        if dx == 0.0 {
-            self.v_lines.push(line);
-        } else {
-            self.m_lines.push(line);
-        }
+        self.lines.push(line);
     }
 }

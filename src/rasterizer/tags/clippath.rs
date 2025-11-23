@@ -22,7 +22,7 @@ impl ClipMask {
         }
     }
 
-    pub fn from_path( tag: &Tag, scale: f32 ) -> Option<Self> {
+    pub fn from_path( tag: &Tag, scale: f32) -> Option<Self> {
         let d = tag.params.get("d")?;
         let d_path = parse_path_data(d);
 

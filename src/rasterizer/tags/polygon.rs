@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use crate::parser::tags::Tag;
 use crate::rasterizer::canva::Canvas;
 use crate::rasterizer::dda::Rasterizer;
-use crate::rasterizer::map::Map;
 use crate::rasterizer::raster::{PathRasterizer, Point};
 use crate::rasterizer::tags::clippath::{get_clip_path_id, ClipMask};
 use crate::rasterizer::tags::path::PathCommand;
@@ -10,7 +9,7 @@ use crate::rasterizer::tags::path::PathCommand::MoveTo;
 use crate::utils::color::get_fill;
 use crate::utils::transform::Transform;
 
-pub fn draw_polygon(tag: &Tag, defs: &HashMap<String, Tag>, map: &mut Map, transform: &Transform) {
+pub fn draw_polygon(tag: &Tag, defs: &HashMap<String, Tag>, map: &mut Canvas, transform: &Transform) {
     let mut fill = get_fill(tag).resolve(defs);
     let mut points = get_points(tag);
 
@@ -71,8 +70,8 @@ pub fn draw_polygon(tag: &Tag, defs: &HashMap<String, Tag>, map: &mut Map, trans
         }
     }
 
-    let draw_x = path_rasterizer.bounds.x as usize;
-    let draw_y = path_rasterizer.bounds.y as usize;
+    let draw_x = path_rasterizer.bounds.x.round() as usize;
+    let draw_y = path_rasterizer.bounds.y.round() as usize;
 
     map.add_buffer(
         &color_map,
