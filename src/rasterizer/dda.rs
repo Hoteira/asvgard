@@ -1,6 +1,6 @@
 use crate::rasterizer::raster::Line;
 
-// Adapted from TiTanFont
+// Adapted from TiTanF
 
 pub struct Rasterizer {
     pub(crate) width: usize,

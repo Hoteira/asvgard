@@ -7,9 +7,10 @@ use crate::rasterizer::tags::clippath::{get_clip_path_id, ClipMask};
 use crate::rasterizer::tags::path::PathCommand;
 use crate::rasterizer::tags::path::PathCommand::MoveTo;
 use crate::utils::color::get_fill;
+use crate::utils::effects::get_stroke_width;
 use crate::utils::transform::Transform;
 
-pub fn draw_polygon(tag: &Tag, defs: &HashMap<String, Tag>, map: &mut Canvas, transform: &Transform) {
+pub fn draw_polygon(tag: &mut Tag, defs: &HashMap<String, Tag>, map: &mut Canvas, transform: &Transform) {
     let mut fill = get_fill(tag).resolve(defs);
     let mut points = get_points(tag);
 
@@ -28,9 +29,11 @@ pub fn draw_polygon(tag: &Tag, defs: &HashMap<String, Tag>, map: &mut Canvas, tr
     commands.push(PathCommand::ClosePath);
 
     let transformed_path = crate::rasterizer::tags::path::apply_transform_to_path(&commands, transform);
+    
+    let stroke_width = get_stroke_width(tag);
 
     let mut path_rasterizer = PathRasterizer::new();
-    path_rasterizer.build_lines_from_path(&transformed_path, 1.0, 1.0);
+    path_rasterizer.build_lines_from_path(&transformed_path, 1.0, 1.0, stroke_width);
 
     let renderer = Rasterizer::new(
         path_rasterizer.bounds.width.ceil() as usize + 1,

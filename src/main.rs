@@ -13,8 +13,8 @@ use crate::utils::transform::Transform;
 fn main() {
     let svg_data = include_bytes!("../bunny.svg");
 
-    let canvas_width = 512;
-    let canvas_height = 512;
+    let canvas_width = 600;
+    let canvas_height = 500;
 
     let mut window = Window::new(
         "Asvgard - SVG Rasterizer",

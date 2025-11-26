@@ -27,7 +27,7 @@ impl ClipMask {
         let d_path = parse_path_data(d);
 
         let mut path_rasterizer = PathRasterizer::new();
-        path_rasterizer.build_lines_from_path(&d_path, scale, 1.0);
+        path_rasterizer.build_lines_from_path(&d_path, scale, 1.0, 0.0);
 
         let width = path_rasterizer.bounds.width.ceil() as usize;
         let height = path_rasterizer.bounds.height.ceil() as usize;

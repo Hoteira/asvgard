@@ -1,6 +1,5 @@
 pub(crate) mod canva;
 pub(crate) mod tags;
-mod raster;
+pub(crate) mod raster;
 mod dda;
-mod strokeraster;
 mod stroke;

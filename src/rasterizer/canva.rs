@@ -3,6 +3,8 @@ use crate::parser::tags::Tag;
 use crate::rasterizer::tags::path::draw_path;
 use crate::rasterizer::tags::polygon::draw_polygon;
 use crate::rasterizer::tags::rect::draw_rect;
+use crate::rasterizer::tags::circle::draw_circle;
+use crate::rasterizer::tags::ellipse::draw_ellipse;
 use crate::utils::transform::{parse_transform, Transform};
 
 pub struct Canvas {
@@ -36,6 +38,8 @@ impl Canvas {
             "path" => { draw_path(tag, defs, self, &combined); }
             "rect" => { draw_rect(tag, defs, self, &combined); }
             "polygon" => { draw_polygon(tag, defs, self, &combined); }
+            "circle" => { draw_circle(tag, defs, self, &combined); }
+            "ellipse" => { draw_ellipse(tag, defs, self, &combined); }
             _ => {}
         }
 
@@ -81,7 +85,6 @@ impl Canvas {
         let dst_g = ((dst_color >> 8) & 0xFF) as f32;
         let dst_b = (dst_color & 0xFF) as f32;
 
-        // Porter-Duff "over" compositing (unpremultiplied)
         let out_a = src_a + dst_a * (1.0 - src_a);
         let out_r = (src_r * src_a + dst_r * dst_a * (1.0 - src_a)) / out_a.max(0.001);
         let out_g = (src_g * src_a + dst_g * dst_a * (1.0 - src_a)) / out_a.max(0.001);

@@ -1,4 +1,5 @@
 use crate::parser::tags::Tag;
+use crate::rasterizer::raster::Point;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Transform {
@@ -81,6 +82,11 @@ impl Transform {
             self.a * x + self.c * y + self.e,
             self.b * x + self.d * y + self.f,
         )
+    }
+
+    pub fn apply_point(&self, p: Point) -> Point {
+        let (x, y) = self.apply(p.x, p.y);
+        Point { x, y }
     }
 
     pub fn apply_no_translate(&self, x: f32, y: f32) -> (f32, f32) {

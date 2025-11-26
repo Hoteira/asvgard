@@ -52,7 +52,7 @@ pub fn get_fill(tag: &Tag) -> Paint {
     tag.params
         .get("fill")
         .map(|c| parse_paint(c))
-        .unwrap_or(Paint::Solid(0xFF000000)) // Default to black
+        .unwrap_or(Paint::Solid(0x0000_0000))
 }
 
 #[inline]
@@ -97,8 +97,7 @@ pub(crate) fn parse_color_value(c: &str) -> u32 {
         return parse_hsl(&c);
     }
 
-    0xFF000000 // Default to black
-}
+            0x0000_0000}
 
 fn parse_hsl(hsl: &str) -> u32 {
     let is_hsla = hsl.starts_with("hsla(");

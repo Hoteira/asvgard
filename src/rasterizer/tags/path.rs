@@ -1,16 +1,14 @@
 use crate::parser::tags::Tag;
 use crate::rasterizer::canva::Canvas;
 use crate::rasterizer::dda::Rasterizer;
-use crate::rasterizer::raster::{PathRasterizer, Point};
+use crate::rasterizer::raster::{Line, PathRasterizer, Point};
 use crate::utils::color::{Paint, get_fill, get_stroke};
-use crate::rasterizer::tags::clippath::{get_clip_path_id, ClipMask};
 use crate::utils::transform::Transform;
 use std::collections::HashMap;
-use crate::rasterizer::stroke::stroke_to_lines;
-use crate::rasterizer::strokeraster::StrokeRasterizer;
+use crate::rasterizer::stroke::draw_stroke;
 use crate::utils::effects::get_stroke_width;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum PathCommand {
     MoveTo(Point),
     LineTo(Point),
@@ -27,117 +25,110 @@ pub enum PathCommand {
     ClosePath,
 }
 
+fn translate_lines(lines: &[Line], dx: f32, dy: f32) -> Vec<Line> {
+    lines.iter().map(|line| {
+        let mut new_line = line.clone();
+        new_line.x0 -= dx;
+        new_line.y0 -= dy;
+        new_line.x1 -= dx;
+        new_line.y1 -= dy;
+        new_line
+    }).collect()
+}
+
+
 pub fn draw_path(
     tag: &mut Tag,
     defs: &HashMap<String, Tag>,
     map: &mut Canvas,
     transform: &Transform
 ) {
-    let mut fill = get_fill(tag).resolve(defs);
-    let stroke = get_stroke(tag).resolve(defs);
-
     let d = match tag.params.get("d") {
         Some(d) => d,
-        None => {
-            return;
-        }
+        None => return,
     };
 
     let d_path = parse_path_data(d);
-
     let transformed_path = apply_transform_to_path(&d_path, transform);
 
+    let mut fill = get_fill(tag).resolve(defs);
     let mut stroke = get_stroke(tag).resolve(defs);
     let stroke_width = get_stroke_width(tag);
 
-    let mut path_rasterizer = PathRasterizer::new();
-    path_rasterizer.build_lines_from_path(&transformed_path, 1.0, 1.0);
-
-    let mut stroke_rasterizer = StrokeRasterizer::new();
-    stroke_rasterizer.build_lines_from_path(&transformed_path, 1.0, 1.0, stroke_width);
-
-    let renderer = Rasterizer::new(
-        path_rasterizer.bounds.width.ceil() as usize + 1,
-        path_rasterizer.bounds.height.ceil() as usize,
-    );
-    
-    let stroke_renderer = Rasterizer::new(
-        path_rasterizer.bounds.width.ceil() as usize + 1 + stroke_width.ceil() as usize,
-        path_rasterizer.bounds.height.ceil() as usize + stroke_width.ceil() as usize,
-    );
-
-    let r_w = renderer.width;
-    let r_h = renderer.height;
-    let bitmap = renderer.draw(&path_rasterizer.v_lines, &path_rasterizer.m_lines).to_bitmap();
-
     let (sx, sy) = transform.get_scale();
+    let scale = sx.min(sy);
 
-    fill.scale(sx.min(sy));
-
-    let mut color_map = generate_color_map(
-        &bitmap,
-        &fill,
-        r_w,
-        r_h,
-        path_rasterizer.bounds.x,
-        path_rasterizer.bounds.y,
-    );
+    fill.scale(scale);
+    stroke.scale(scale);
 
 
-    let s_w = stroke_renderer.width;
-    let s_h = stroke_renderer.height;
-
-    let stroke_lines = stroke_to_lines(&path_rasterizer.m_lines, stroke_width);
-    let bitmap = stroke_renderer.draw(&[], &stroke_lines).to_bitmap();
+    if !fill.is_none() {
     
-    let (sx, sy) = transform.get_scale();
-
-    stroke.scale(sx.min(sy));
-
-    let mut color_map = generate_color_map(
-        &bitmap,
-        &stroke,
-        s_w,
-        s_h,
-        path_rasterizer.bounds.x,
-        path_rasterizer.bounds.y,
-    );
-    
-    
-    
-    
-    
-    
-    
-
-    if let Some(clip_id) = get_clip_path_id(tag) {
-        if let Some(clippath_tag) = defs.get(&clip_id) {
-            if clippath_tag.name == "clipPath" {
-                if let Some(clip_mask) = ClipMask::from_clippath_tag(clippath_tag, sx.min(sy)) {
-                    clip_mask.apply_to_bitmap(
-                        &mut color_map,
-                        path_rasterizer.bounds.x,
-                        path_rasterizer.bounds.y,
-                        r_w,
-                        r_h
-                    );
+        let mut fill_commands = Vec::new();
+        let mut subpath_open = false;
+        for cmd in &transformed_path {
+            match cmd {
+                PathCommand::MoveTo(_) => {
+                    if subpath_open {
+                        fill_commands.push(PathCommand::ClosePath);
+                    }
+                    fill_commands.push(cmd.clone());
+                    subpath_open = true;
+                }
+                PathCommand::ClosePath => {
+                    fill_commands.push(cmd.clone());
+                    subpath_open = false;
+                }
+                _ => {
+                    fill_commands.push(cmd.clone());
                 }
             }
         }
+        if subpath_open {
+            fill_commands.push(PathCommand::ClosePath);
+        }
+
+        let mut fill_rasterizer = PathRasterizer::new();
+
+        fill_rasterizer.build_lines_from_path(&fill_commands, 1.0, 1.0, 0.0);
+
+        let bounds = fill_rasterizer.bounds;
+        let r_w = bounds.width.ceil() as usize + 1;
+        let r_h = bounds.height.ceil() as usize;
+
+        if r_w > 0 && r_h > 0 {
+            let draw_x = bounds.x.round() as usize;
+            let draw_y = bounds.y.round() as usize;
+            let local_v = translate_lines(&fill_rasterizer.v_lines, bounds.x, bounds.y);
+            let local_m = translate_lines(&fill_rasterizer.m_lines, bounds.x, bounds.y);
+            let renderer = Rasterizer::new(r_w, r_h);
+            let bitmap = renderer.draw(&local_v, &local_m).to_bitmap();
+            let color_map = generate_color_map(&bitmap, &fill, r_w, r_h, bounds.x, bounds.y);
+            map.add_buffer(&color_map, draw_x, draw_y, r_w, r_h);
+        }
     }
 
-    let draw_x = path_rasterizer.bounds.x.round() as usize;
-    let draw_y = path_rasterizer.bounds.y.round() as usize;
 
-    map.add_buffer(
-        &color_map,
-        draw_x,
-        draw_y,
-        r_w,
-        r_h
-    );
-
-
+    if !stroke.is_none() && stroke_width > 0.0 {
+        let mut subpath_start_index = 0;
+        for (i, cmd) in transformed_path.iter().enumerate() {
+            if i > 0 && matches!(cmd, PathCommand::MoveTo(_)) {
+                let subpath = &transformed_path[subpath_start_index..i];
+                if !subpath.is_empty() {
+                    let mut stroke_rasterizer = PathRasterizer::new();
+                    stroke_rasterizer.build_lines_from_path(subpath, 1.0, 1.0, stroke_width);
+                    draw_stroke(map, &stroke_rasterizer, stroke.clone(), stroke_width);
+                }
+                subpath_start_index = i;
+            }
+        }
+        let subpath = &transformed_path[subpath_start_index..];
+        if !subpath.is_empty() {
+            let mut stroke_rasterizer = PathRasterizer::new();
+            stroke_rasterizer.build_lines_from_path(subpath, 1.0, 1.0, stroke_width);
+            draw_stroke(map, &stroke_rasterizer, stroke, stroke_width);
+        }
+    }
 }
 
 pub fn parse_path_data(d: &str) -> Vec<PathCommand> {
@@ -163,8 +154,10 @@ pub fn parse_path_data(d: &str) -> Vec<PathCommand> {
                 current_number.clear();
             }
 
-            if current_command != ' ' && !args.is_empty() {
-                process_command(current_command, &mut args, &mut d_path, &mut current_pos, &mut subpath_start);
+            if current_command != ' ' {
+                if !args.is_empty() || current_command.to_ascii_uppercase() == 'Z' {
+                    process_command(current_command, &mut args, &mut d_path, &mut current_pos, &mut subpath_start);
+                }
             }
 
             current_command = c;
@@ -190,9 +183,7 @@ pub fn parse_path_data(d: &str) -> Vec<PathCommand> {
     }
 
     if current_command != ' ' {
-        if current_command == 'Z' || current_command == 'z' || !args.is_empty() {
-            process_command(current_command, &mut args, &mut d_path, &mut current_pos, &mut subpath_start);
-        }
+        process_command(current_command, &mut args, &mut d_path, &mut current_pos, &mut subpath_start);
     }
 
     d_path
@@ -320,6 +311,32 @@ fn process_command(
                 i += 7;
             }
         }
+        'T' => {
+            let mut i = 0;
+            while i + 1 < args.len() {
+                let prev_control = if let Some(PathCommand::QuadraticBezier(cp, _)) = d_path.last() {
+                    Point {
+                        x: 2.0 * current_pos.x - cp.x,
+                        y: 2.0 * current_pos.y - cp.y,
+                    }
+                } else {
+                    *current_pos
+                };
+
+                let (x, y) = if is_relative {
+                    (current_pos.x + args[i], current_pos.y + args[i + 1])
+                } else {
+                    (args[i], args[i + 1])
+                };
+
+                d_path.push(PathCommand::QuadraticBezier(
+                    prev_control,
+                    Point { x, y }
+                ));
+                *current_pos = Point { x, y };
+                i += 2;
+            }
+        },
         'Z' => {
             d_path.push(PathCommand::ClosePath);
             *current_pos = *subpath_start;
@@ -330,36 +347,146 @@ fn process_command(
     args.clear();
 }
 
+fn arc_to_beziers(start: Point, rx: f32, ry: f32, x_axis_rotation: f32, large_arc: bool, sweep: bool, end: Point) -> Vec<PathCommand> {
+    let pi = std::f32::consts::PI;
+    let cos_phi = (x_axis_rotation * pi / 180.0).cos();
+    let sin_phi = (x_axis_rotation * pi / 180.0).sin();
+
+    let mut rx = rx.abs();
+    let mut ry = ry.abs();
+
+    let dx2 = (start.x - end.x) / 2.0;
+    let dy2 = (start.y - end.y) / 2.0;
+
+    let x1p = cos_phi * dx2 + sin_phi * dy2;
+    let y1p = -sin_phi * dx2 + cos_phi * dy2;
+
+    let lambda_check = (x1p * x1p) / (rx * rx) + (y1p * y1p) / (ry * ry);
+    if lambda_check > 1.0 {
+        rx *= lambda_check.sqrt();
+        ry *= lambda_check.sqrt();
+    }
+
+    let sign = if large_arc == sweep { -1.0 } else { 1.0 };
+    let num = rx * rx * ry * ry - rx * rx * y1p * y1p - ry * ry * x1p * x1p;
+    let den = rx * rx * y1p * y1p + ry * ry * x1p * x1p;
+    let mut sq = (num / den).max(0.0).sqrt();
+    if den < 1e-9 { sq = 0.0; }
+    let cxp = sign * sq * (rx * y1p / ry);
+    let cyp = sign * sq * -(ry * x1p / rx);
+
+    let cx = cos_phi * cxp - sin_phi * cyp + (start.x + end.x) / 2.0;
+    let cy = sin_phi * cxp + cos_phi * cyp + (start.y + end.y) / 2.0;
+
+    let start_vec_x = (x1p - cxp) / rx;
+    let start_vec_y = (y1p - cyp) / ry;
+    let end_vec_x = (-x1p - cxp) / rx;
+    let end_vec_y = (-y1p - cyp) / ry;
+    
+    let start_angle = start_vec_y.atan2(start_vec_x);
+    let dot = (start_vec_x * end_vec_x + start_vec_y * end_vec_y).clamp(-1.0, 1.0);
+    let mut delta_angle = dot.acos();
+
+    if (start_vec_x * end_vec_y - start_vec_y * end_vec_x) < 0.0 {
+        delta_angle = -delta_angle;
+    }
+    if sweep && delta_angle < 0.0 {
+        delta_angle += 2.0 * pi;
+    } else if !sweep && delta_angle > 0.0 {
+        delta_angle -= 2.0 * pi;
+    }
+
+    let num_segments = (delta_angle.abs() / (pi / 2.0)).ceil() as usize;
+    let mut beziers = Vec::with_capacity(num_segments);
+    let angle_step = delta_angle / num_segments as f32;
+
+    let mut current_angle = start_angle;
+
+    for i in 0..num_segments {
+        let next_angle = current_angle + angle_step;
+
+        let alpha = (4.0/3.0) * (angle_step / 4.0).tan();
+
+        let p0_unit = Point { x: current_angle.cos(), y: current_angle.sin() };
+        let p3_unit = Point { x: next_angle.cos(), y: next_angle.sin() };
+
+        let p1_unit = Point { x: p0_unit.x - alpha * p0_unit.y, y: p0_unit.y + alpha * p0_unit.x };
+        let p2_unit = Point { x: p3_unit.x + alpha * p3_unit.y, y: p3_unit.y - alpha * p3_unit.x };
+
+        let transform_unit_point = |p_unit: Point| -> Point {
+            let x_scaled = p_unit.x * rx;
+            let y_scaled = p_unit.y * ry;
+            let x_rotated = cos_phi * x_scaled - sin_phi * y_scaled;
+            let y_rotated = sin_phi * x_scaled + cos_phi * y_scaled;
+            Point { x: x_rotated + cx, y: y_rotated + cy }
+        };
+        
+        let p1 = transform_unit_point(p1_unit);
+        let p2 = transform_unit_point(p2_unit);
+        
+        let p3 = if i == num_segments - 1 {
+            end
+        } else {
+            transform_unit_point(p3_unit)
+        };
+
+        beziers.push(PathCommand::CubicBezier(p1, p2, p3));
+        current_angle = next_angle;
+    }
+    beziers
+}
+
 pub(crate) fn apply_transform_to_path(commands: &[PathCommand], transform: &Transform) -> Vec<PathCommand> {
-    commands.iter().map(|cmd| {
-        match cmd {
+    let mut transformed_cmds = Vec::new();
+    let mut current_pos = Point { x: 0.0, y: 0.0 };
+    let mut subpath_start = Point { x: 0.0, y: 0.0 };
+
+    for cmd in commands {
+        match cmd.clone() {
             PathCommand::MoveTo(p) => {
-                let (x, y) = transform.apply(p.x, p.y);
-                PathCommand::MoveTo(Point { x, y })
+                current_pos = p;
+                subpath_start = p;
+                transformed_cmds.push(PathCommand::MoveTo(transform.apply_point(p)));
             }
             PathCommand::LineTo(p) => {
-                let (x, y) = transform.apply(p.x, p.y);
-                PathCommand::LineTo(Point { x, y })
+                current_pos = p;
+                transformed_cmds.push(PathCommand::LineTo(transform.apply_point(p)));
             }
             PathCommand::CubicBezier(cp1, cp2, end) => {
-                let (x1, y1) = transform.apply(cp1.x, cp1.y);
-                let (x2, y2) = transform.apply(cp2.x, cp2.y);
-                let (x, y) = transform.apply(end.x, end.y);
-                PathCommand::CubicBezier(Point { x: x1, y: y1 }, Point { x: x2, y: y2 }, Point { x, y })
+                current_pos = end;
+                transformed_cmds.push(PathCommand::CubicBezier(
+                    transform.apply_point(cp1),
+                    transform.apply_point(cp2),
+                    transform.apply_point(end),
+                ));
             }
             PathCommand::QuadraticBezier(cp, end) => {
-                let (x1, y1) = transform.apply(cp.x, cp.y);
-                let (x, y) = transform.apply(end.x, end.y);
-                PathCommand::QuadraticBezier(Point { x: x1, y: y1 }, Point { x, y })
+                current_pos = end;
+                transformed_cmds.push(PathCommand::QuadraticBezier(
+                    transform.apply_point(cp),
+                    transform.apply_point(end),
+                ));
             }
             PathCommand::Arc { rx, ry, x_axis_rotation, large_arc_flag, sweep_flag, end } => {
-                let (x, y) = transform.apply(end.x, end.y);
-                let (sx, sy) = transform.get_scale();
-                PathCommand::Arc { rx: rx * sx, ry: ry * sy, x_axis_rotation: *x_axis_rotation, large_arc_flag: *large_arc_flag, sweep_flag: *sweep_flag, end: Point { x, y } }
+                let beziers = arc_to_beziers(current_pos, rx, ry, x_axis_rotation, large_arc_flag, sweep_flag, end);
+                for bezier in beziers {
+                    if let PathCommand::CubicBezier(cp1, cp2, end) = bezier {
+                        transformed_cmds.push(PathCommand::CubicBezier(
+                            transform.apply_point(cp1),
+                            transform.apply_point(cp2),
+                            transform.apply_point(end),
+                        ));
+                    }
+                }
+                current_pos = end;
             }
-            PathCommand::ClosePath => PathCommand::ClosePath,
+            PathCommand::ClosePath => {
+                current_pos = subpath_start;
+                transformed_cmds.push(PathCommand::ClosePath);
+            }
         }
-    }).collect()
+    }
+    transformed_cmds
 }
 
 pub(crate) fn generate_color_map(
