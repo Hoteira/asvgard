@@ -86,16 +86,13 @@ Contributions are welcome! Open an issue or PR on GitHub.
 ---
 
 <div align="center">
-  
-### ⚔️ **Guarding vectors with Rust precision** ⚔️
+
 
 <br>
 
-<sub>Built with 🦀 Rust and ❤️ for graphics</sub>
+<sub>Built with 🦀 Rust and 📈</sub>
 
 <br>
 
-[![GitHub Stars](https://img.shields.io/github/stars/yourusername/asvgard?style=social)](https://github.com/yourusername/asvgard)
-[![Twitter Follow](https://img.shields.io/twitter/follow/yourusername?style=social)](https://twitter.com/yourusername)
 
 </div>
