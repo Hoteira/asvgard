@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 minifb = "0.28.0"
+titanf = "2.0.0"

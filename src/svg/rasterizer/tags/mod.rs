@@ -1,0 +1,12 @@
+pub(crate) mod clippath;
+pub(crate) mod lineargradient;
+pub(crate) mod path;
+pub(crate) mod rect;
+pub(crate) mod polygon;
+pub(crate) mod ellipse;
+pub(crate) mod circle;
+pub(crate) mod line;
+pub(crate) mod polyline;
+pub(crate) mod radialgradient;
+pub(crate) mod r#use;
+pub(crate) mod text;
