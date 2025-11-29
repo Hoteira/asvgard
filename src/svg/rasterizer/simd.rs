@@ -1,8 +1,21 @@
 #[cfg(target_arch = "x86_64")]
+#[cfg(feature = "std")]
 use std::arch::x86_64::*;
 
+#[cfg(target_arch = "x86_64")]
+#[cfg(not(feature = "std"))]
+use core::arch::x86_64::*;
+
 #[cfg(target_arch = "aarch64")]
+#[cfg(feature = "std")]
 use std::arch::aarch64::*;
+
+#[cfg(target_arch = "aarch64")]
+#[cfg(not(feature = "std"))]
+use core::arch::aarch64::*;
+
+#[cfg(test)]
+use crate::utils::compat::Vec;
 
 /// Blends a slice of source pixels into a destination slice using standard source-over composition.
 /// Assumes pixels are ARGB (u32).
@@ -12,9 +25,20 @@ pub fn blend_scanline(dst: &mut [u32], src: &[u32]) {
         return;
     }
 
-    #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+    #[cfg(all(target_arch = "x86_64"))]
     {
-        if is_x86_feature_detected!("sse2") {
+        #[cfg(feature = "std")]
+        {
+            if is_x86_feature_detected!("sse2") {
+                unsafe {
+                    blend_scanline_sse2(dst, src, len);
+                    return;
+                }
+            }
+        }
+        #[cfg(not(feature = "std"))]
+        {
+            // In no_std, for x86_64, SSE2 is assumed to be available
             unsafe {
                 blend_scanline_sse2(dst, src, len);
                 return;

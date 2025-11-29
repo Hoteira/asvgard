@@ -2,6 +2,8 @@ pub mod simd;
 
 use crate::png::chunks::IhdrChunk;
 use crate::png::chunks::ColorType;
+use crate::utils::compat::{Vec, String, format};
+use alloc::vec;
 
 pub fn unfilter(data: &[u8], ihdr: &IhdrChunk) -> Result<Vec<u8>, String> {
     let bpp = calculate_bpp(ihdr.color_type, ihdr.bit_depth)?;

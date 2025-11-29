@@ -3,6 +3,8 @@
 //! Includes BitReader, Huffman Tree construction/decoding (canonical),
 //! and the main inflate loop handling stored, fixed, and dynamic blocks.
 
+use crate::utils::compat::{Vec, String, ToString, format, vec};
+
 pub struct Header {
     data: [u8; 2],
 }

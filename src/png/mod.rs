@@ -7,9 +7,10 @@ pub mod chunks;
 pub mod zlib;
 mod filter;
 
-use std::convert::TryInto;
+use core::convert::TryInto;
 use chunks::{IhdrChunk, ColorType, InterlaceMethod, PlteChunk, Rgb};
 use crate::utils::image::resize_image;
+use crate::utils::compat::{Vec, String, ToString, format, vec};
 
 const SIGNATURE: [u8; 8] = [137, 80, 78, 71, 13, 10, 26, 10];
 

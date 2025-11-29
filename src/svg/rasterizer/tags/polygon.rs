@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use crate::utils::compat::{HashMap, Vec, String, ToString, format};
 use crate::svg::parser::tags::Tag;
 use crate::svg::rasterizer::canva::Canvas;
 use crate::svg::rasterizer::tags::path::draw_path;

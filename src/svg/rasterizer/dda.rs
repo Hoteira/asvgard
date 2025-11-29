@@ -1,4 +1,6 @@
 use crate::svg::rasterizer::raster::Line;
+use crate::utils::compat::FloatExt;
+use crate::utils::compat::{Vec, vec};
 
 // Adapted from TiTanF
 

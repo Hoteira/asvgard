@@ -1,3 +1,5 @@
+use crate::utils::compat::{String, ToString, format};
+
 #[derive(Debug, Clone, Copy)]
 pub enum ImageType {
     NoImageData = 0,

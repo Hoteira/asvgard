@@ -4,9 +4,11 @@ use crate::svg::rasterizer::dda::Rasterizer;
 use crate::svg::rasterizer::raster::{Line, PathRasterizer, Point};
 use crate::svg::utils::color::{Paint, get_fill, get_stroke};
 use crate::svg::utils::transform::Transform;
-use std::collections::HashMap;
+use crate::utils::compat::HashMap;
 use crate::svg::rasterizer::stroke::draw_stroke;
 use crate::svg::utils::effects::get_stroke_width;
+use crate::utils::compat::FloatExt;
+use crate::utils::compat::{Vec, String};
 
 #[derive(Debug, Clone)]
 pub enum PathCommand {
@@ -107,7 +109,8 @@ pub fn draw_path(
             let color_map = generate_color_map(&bitmap, &fill, r_w, r_h, bounds.x, bounds.y, bounds.x, bounds.y, bounds.width, bounds.height);
             map.add_buffer(&color_map, draw_x as isize, draw_y as isize, r_w, r_h);
         } else {
-            println!("Skipping draw: invalid bounds dimensions {}x{}", r_w, r_h);
+            #[cfg(feature = "std")]
+            std::println!("Skipping draw: invalid bounds dimensions {}x{}", r_w, r_h);
         }
     }
 
@@ -351,7 +354,7 @@ fn process_command(
 }
 
 fn arc_to_beziers(start: Point, rx: f32, ry: f32, x_axis_rotation: f32, large_arc: bool, sweep: bool, end: Point) -> Vec<PathCommand> {
-    let pi = std::f32::consts::PI;
+    let pi = core::f32::consts::PI;
     let cos_phi = (x_axis_rotation * pi / 180.0).cos();
     let sin_phi = (x_axis_rotation * pi / 180.0).sin();
 

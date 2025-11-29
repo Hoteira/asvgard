@@ -3,7 +3,7 @@ use asvgard::load_image;
 use std::time::Instant;
 
 fn main() {
-    let data = include_bytes!("../bunny.svg");
+    let data = include_bytes!("../test.png");
 
     let canvas_width = 600;
     let canvas_height = 600;

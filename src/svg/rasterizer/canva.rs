@@ -1,4 +1,6 @@
-use std::collections::HashMap;
+use crate::utils::compat::{HashMap, String, Vec};
+use crate::utils::compat::FloatExt;
+use alloc::vec;
 use crate::svg::parser::tags::Tag;
 use crate::svg::rasterizer::tags::path::draw_path;
 use crate::svg::rasterizer::tags::polygon::draw_polygon;
@@ -43,7 +45,6 @@ impl Canvas {
             _ => {}
         }
 
-        // Handle Filter
         if let Some(filter_id_raw) = tag.params.get("filter") {
              let filter_id = if filter_id_raw.starts_with("url(#") && filter_id_raw.ends_with(")") {
                  &filter_id_raw[5..filter_id_raw.len()-1]
@@ -54,12 +55,9 @@ impl Canvas {
              if let Some(filter_tag) = defs.get(filter_id) {
                  let mut temp_canvas = Self::new_transparent(self.width, self.height);
                  
-                 // Clone tag and remove filter to avoid infinite recursion
                  let mut tag_clone = tag.clone();
                  tag_clone.params.remove("filter");
                  
-                 // Draw to temp canvas using the PARENT transform
-                 // The draw() method will re-parse the local transform from the tag
                  temp_canvas.draw(&mut tag_clone, defs, transform);
                  
                  let filtered_data = crate::svg::rasterizer::filters::apply_filter(
@@ -116,13 +114,11 @@ impl Canvas {
         let clip_x2 = (x_offset + buffer_w).min(canvas_w);
         let clip_y2 = (y_offset + buffer_h).min(canvas_h);
 
-        // If no intersection, return
         if clip_x1 >= clip_x2 || clip_y1 >= clip_y2 {
             return;
         }
 
         for screen_y_isize in clip_y1..clip_y2 {
-            // Calculate indices for this row
             let src_y = (screen_y_isize - y_offset) as usize;
             let dst_y = screen_y_isize as usize;
             
@@ -134,7 +130,6 @@ impl Canvas {
             let src_slice = &color_map[src_row_start .. src_row_start + len];
             let dst_slice = &mut self.data[dst_row_start .. dst_row_start + len];
             
-            // Blend using SIMD optimized function
             crate::svg::rasterizer::simd::blend_scanline(dst_slice, src_slice);
         }
     }

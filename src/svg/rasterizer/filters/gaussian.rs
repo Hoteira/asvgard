@@ -1,5 +1,7 @@
 use crate::svg::parser::tags::Tag;
-use std::f32::consts::PI;
+use core::f32::consts::PI;
+use crate::utils::compat::FloatExt;
+use crate::utils::compat::Vec;
 
 pub fn apply(input: &[u32], width: usize, height: usize, tag: &Tag) -> Vec<u32> {
     let std_dev_str = tag.params.get("stdDeviation").map(|s| s.as_str()).unwrap_or("0");

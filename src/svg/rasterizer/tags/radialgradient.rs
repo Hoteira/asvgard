@@ -2,6 +2,9 @@ use crate::svg::parser::tags::Tag;
 use crate::svg::rasterizer::tags::lineargradient::{GradientStop, GradientUnits, blend_colors};
 use crate::svg::utils::color::parse_color_value;
 use crate::svg::utils::coords::parse_length;
+use crate::utils::compat::FloatExt;
+use crate::utils::compat::Vec;
+use core::cmp::Ordering;
 
 #[derive(Debug, Clone)]
 pub struct RadialGradient {
@@ -179,7 +182,7 @@ pub fn load_radial_gradient(tag: &Tag) -> RadialGradient {
         }
     }
     
-    stops.sort_by(|a, b| a.offset.partial_cmp(&b.offset).unwrap_or(std::cmp::Ordering::Equal));
+    stops.sort_by(|a, b| a.offset.partial_cmp(&b.offset).unwrap_or(Ordering::Equal));
 
     RadialGradient {
         cx, cy, r, fx, fy, stops, units

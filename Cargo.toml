@@ -1,8 +1,18 @@
 [package]
 name = "asvgard"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
-minifb = "0.28.0"
+minifb = { version = "0.28.0", optional = true }
 titanf = "2.0.0"
+
+[features]
+default = ["std", "binary"]
+std = []
+binary = ["dep:minifb"]
+
+[[bin]]
+name = "asvgard"
+path = "src/main.rs"
+required-features = ["binary"]

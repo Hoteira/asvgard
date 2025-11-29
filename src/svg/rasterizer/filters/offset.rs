@@ -1,4 +1,5 @@
 use crate::svg::parser::tags::Tag;
+use crate::utils::compat::{Vec, vec};
 
 pub fn apply(input: &[u32], width: usize, height: usize, tag: &Tag) -> Vec<u32> {
     let dx = tag.params.get("dx").and_then(|s| s.parse::<f32>().ok()).unwrap_or(0.0);

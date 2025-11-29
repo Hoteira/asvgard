@@ -7,11 +7,12 @@ pub mod parser;
 pub mod rasterizer;
 pub mod utils;
 
-use std::collections::HashMap;
+use crate::utils::compat::{HashMap, String, ToString, Vec};
 use crate::svg::parser::tags::Tag;
 use crate::svg::utils::transform::Transform;
 use crate::svg::utils::get_id;
 use crate::svg::rasterizer::canva::Canvas;
+use crate::utils::compat::FloatExt;
 
 /// Renders an SVG byte stream into a pixel buffer.
 ///

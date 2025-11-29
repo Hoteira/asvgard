@@ -2,6 +2,7 @@ use crate::svg::parser::tags::Tag;
 use crate::svg::rasterizer::dda::Rasterizer;
 use crate::svg::rasterizer::raster::PathRasterizer;
 use crate::svg::rasterizer::tags::path::parse_path_data;
+use crate::utils::compat::{vec, Vec, String, ToString};
 
 pub struct ClipMask {
     pub width: usize,

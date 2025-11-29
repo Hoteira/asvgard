@@ -30,20 +30,27 @@
 //! }
 //! ```
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
+
 pub mod svg;
 pub mod png;
 pub mod tga;
 pub mod utils;
 
-use std::cmp::min;
+use core::cmp::min;
+use alloc::vec::Vec;
+use alloc::string::{String, ToString};
 
 /// Common types and functions for easy import.
 pub mod prelude {
     pub use crate::load_image;
     pub use crate::detect_type;
     pub use crate::ImageType;
-    // Exporting the Canvas might be useful if moved to a shared location
-    // pub use crate::svg::rasterizer::canva::Canvas; 
 }
 
 /// Supported image formats.
@@ -86,7 +93,7 @@ pub fn detect_type(data: &[u8]) -> ImageType {
 
     // SVG Heuristic (XML-like text check)
     let check_len = min(data.len(), 4096);
-    if let Ok(s) = std::str::from_utf8(&data[0..check_len]) {
+    if let Ok(s) = core::str::from_utf8(&data[0..check_len]) {
         if s.contains("<svg") || s.trim_start().starts_with("<?xml") {
             return ImageType::Svg;
         }

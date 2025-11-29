@@ -1,6 +1,7 @@
-// Adapted from TiTanF
+use crate::utils::compat::FloatExt;
+use crate::utils::compat::{Vec, vec};
 
-pub const PI: f32 = 3.14159265;
+pub const PI: f32 = core::f32::consts::PI;
 
 #[derive(Debug, Clone)]
 pub struct Line {

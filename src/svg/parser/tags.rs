@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use crate::utils::compat::{HashMap, String, Vec};
 
 #[derive(Debug, Clone)]
 pub struct Tag {

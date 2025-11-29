@@ -1,8 +1,9 @@
 use crate::svg::parser::tags::Tag;
-use std::collections::HashMap;
+use crate::utils::compat::{HashMap, String, ToString, Vec, vec};
+use crate::utils::compat::FloatExt;
 
 pub fn apply(
-    _input: &[u32], // feMerge usually ignores the immediate previous input and looks at its children
+    _input: &[u32],
     width: usize,
     height: usize,
     tag: &Tag,

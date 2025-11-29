@@ -1,7 +1,9 @@
 use crate::svg::parser::tags::Tag;
+use crate::utils::compat::{String, Vec};
+use crate::utils::compat::FloatExt;
 use crate::svg::rasterizer::raster::Point;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Transform {
     pub a: f32,
     pub b: f32,

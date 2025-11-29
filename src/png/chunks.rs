@@ -1,4 +1,6 @@
-use std::convert::TryFrom;
+
+use core::convert::TryFrom;
+use crate::utils::compat::{Vec, String, format};
 
 #[derive(Debug)]
 pub enum Chunk {

@@ -1,11 +1,14 @@
 use crate::svg::parser::tags::Tag;
-use std::collections::HashMap;
+use crate::utils::compat::HashMap;
+use crate::svg::rasterizer::tags::lineargradient::{LinearGradient, load_linear_gradient};
+use crate::svg::rasterizer::tags::radialgradient::{RadialGradient, load_radial_gradient};
+use crate::utils::compat::{String, ToString, Vec};
 
 #[derive(Debug, Clone)]
 pub enum Paint {
     Solid(u32),
-    LinearGradient(crate::svg::rasterizer::tags::lineargradient::LinearGradient),
-    RadialGradient(crate::svg::rasterizer::tags::radialgradient::RadialGradient),
+    LinearGradient(LinearGradient),
+    RadialGradient(RadialGradient),
     Reference(String),
     None,
 }
@@ -25,18 +28,20 @@ impl Paint {
                 if let Some(tag) = defs.get(id) {
                     match tag.name.as_str() {
                         "linearGradient" => Paint::LinearGradient(
-                            crate::svg::rasterizer::tags::lineargradient::load_linear_gradient(tag),
+                            load_linear_gradient(tag),
                         ),
                         "radialGradient" => Paint::RadialGradient(
-                             crate::svg::rasterizer::tags::radialgradient::load_radial_gradient(tag),
+                             load_radial_gradient(tag),
                         ),
                         _ => {
-                            println!("ID {} found but tag name is {}", id, tag.name);
+                            #[cfg(feature = "std")]
+                            std::println!("ID {} found but tag name is {}", id, tag.name);
                             Paint::None
                         },
                     }
                 } else {
-                    println!("ID not found in defs: '{}'", id);
+                    #[cfg(feature = "std")]
+                    std::println!("ID not found in defs: '{}'", id);
                     Paint::None
                 }
             }

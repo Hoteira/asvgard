@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use crate::utils::compat::{HashMap, VecDeque, Vec, String, ToString};
 use crate::svg::parser::tags::Tag;
 use crate::svg::rasterizer::canva::Canvas;
 use crate::svg::utils::transform::Transform;
@@ -10,6 +10,7 @@ use crate::svg::rasterizer::raster::{Line as RasterLine, PathRasterizer};
 use crate::svg::rasterizer::dda::Rasterizer;
 use crate::svg::rasterizer::stroke::draw_stroke;
 use titanf::TrueTypeFont;
+use crate::utils::compat::FloatExt;
 
 pub fn draw_text(
     tag: &mut Tag,
@@ -26,15 +27,10 @@ pub fn draw_text(
     let y = tag.params.get("y").map(|s| parse_length(s, 0.0, canvas.height as f32)).unwrap_or(0.0);
     let font_size = tag.params.get("font-size").and_then(|s| s.parse::<f32>().ok()).unwrap_or(16.0);
 
-    let font_data = match std::fs::read("CaskaydiaMonoNerdFontMono-Regular.ttf") {
-        Ok(data) => data,
-        Err(_) => {
-            println!("Failed to load Roboto-Medium.ttf");
-            return;
-        }
-    };
+    // Embedded font for no_std compatibility
+    let font_data = include_bytes!("../../../../CaskaydiaMonoNerdFontMono-Regular.ttf");
     
-    let mut font = match TrueTypeFont::load_font(&font_data) {
+    let mut font = match TrueTypeFont::load_font(font_data) {
         Ok(f) => f,
         Err(_) => return,
     };
@@ -44,7 +40,7 @@ pub fn draw_text(
         fill = Paint::Solid(0xFF000000);
     }
     
-    let mut stroke = get_stroke(tag).resolve(defs);
+    let stroke = get_stroke(tag).resolve(defs);
     let stroke_width = get_stroke_width(tag);
 
     let (sx, sy) = transform.get_scale();

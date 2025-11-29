@@ -2,11 +2,11 @@ mod header;
 
 use crate::tga::header::{TgaHeader, ImageType};
 use crate::utils::image::resize_image;
+use crate::utils::compat::{Vec, String, ToString, vec, format};
 
 pub fn render(data: &[u8], width: usize, height: usize) -> Result<Vec<u32>, String> {
     let header = TgaHeader::parse(data)?;
-    
-    // Skip Header (18 bytes) + ID Field (id_length) + Color Map (len * depth/8)
+
     let mut offset = 18 + header.id_length as usize;
     if header.color_map_type == 1 {
         let entry_size = (header.color_map_depth + 7) / 8;
@@ -48,8 +48,6 @@ fn decode_uncompressed(data: &[u8], header: &TgaHeader, width: usize, height: us
     }
 
     for y in 0..height {
-        // TGA is usually Bottom-Left origin. If descriptor bit 5 is set, it's Top-Left.
-        // We want output to be Top-Left.
         let target_y = if is_top_left { y } else { height - 1 - y };
         
         for x in 0..width {
@@ -96,7 +94,6 @@ fn decode_rle(data: &[u8], header: &TgaHeader, width: usize, height: usize) -> R
                 pixel_idx += 1;
             }
         } else {
-            // Raw packet: Read `count` pixel values
             if offset + count * bytes_per_pixel > data.len() { return Err("EOF reading Raw packet".to_string()); }
             
             for _ in 0..count {
@@ -133,6 +130,6 @@ fn parse_pixel(data: &[u8], bpp: usize) -> u32 {
             let a = data[3];
             ((a as u32) << 24) | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32)
         },
-        _ => 0xFF000000, // Unsupported fallback
+        _ => 0xFF000000,
     }
 }

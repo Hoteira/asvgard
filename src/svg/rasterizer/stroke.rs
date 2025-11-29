@@ -3,6 +3,8 @@ use crate::svg::rasterizer::dda::Rasterizer;
 use crate::svg::rasterizer::raster::{Bounds, Line, PathRasterizer};
 use crate::svg::rasterizer::tags::path::generate_color_map;
 use crate::svg::utils::color::Paint;
+use crate::utils::compat::FloatExt;
+use crate::utils::compat::Vec;
 
 fn create_stroke_outline(segments: &[Line], stroke_width: f32) -> Vec<Line> {
     if segments.is_empty() {

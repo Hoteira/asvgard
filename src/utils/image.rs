@@ -1,3 +1,6 @@
+use crate::utils::compat::Vec;
+use crate::utils::compat::vec;
+
 pub fn resize_image(original: &[u32], src_w: usize, src_h: usize, dst_w: usize, dst_h: usize) -> Vec<u32> {
     let mut resized = vec![0u32; dst_w * dst_h];
 

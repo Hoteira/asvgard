@@ -1,4 +1,5 @@
 use crate::svg::parser::tags::Tag;
+use crate::utils::compat::{Vec, String, ToString};
 
 pub fn load_xml(data: &[u8]) -> Vec<Tag> {
     let (_, total_tags, _) = load_xml_recursive(data, 0);
