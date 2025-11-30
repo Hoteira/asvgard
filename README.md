@@ -1,6 +1,6 @@
 <div align="center">
   <br>
-  <img src="icon/icon.svg" alt="Asvgard Logo" width="120" height="120">
+  <img src="https://raw.githubusercontent.com/Hoteira/asvgard/refs/heads/master/icon/icon.svg" alt="Asvgard Logo" width="120" height="120">
 
 # Asvgard
 
