@@ -1,7 +1,16 @@
 [package]
 name = "asvgard"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+authors = ["Hoteira <hoteira@proton.me>"]
+license = "MIT"
+description = "High-performance SVG, PNG, and TGA rasterizer written in Rust"
+repository = "https://github.com/yourusername/asvgard"
+homepage = "https://github.com/yourusername/asvgard"
+documentation = "https://docs.rs/asvgard"
+readme = "README.md"
+keywords = ["svg", "png", "tga", "rasterizer", "graphics"]
+categories = ["graphics", "multimedia::images", "no-std"]
 
 [dependencies]
 titanf = "2.1.0"
@@ -10,3 +19,6 @@ titanf = "2.1.0"
 default = ["std"]
 std = []
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

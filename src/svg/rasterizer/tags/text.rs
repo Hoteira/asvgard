@@ -27,8 +27,7 @@ pub fn draw_text(
     let y = tag.params.get("y").map(|s| parse_length(s, 0.0, canvas.height as f32)).unwrap_or(0.0);
     let font_size = tag.params.get("font-size").and_then(|s| s.parse::<f32>().ok()).unwrap_or(16.0);
 
-    // Embedded font for no_std compatibility
-    let font_data = include_bytes!("../../../../CaskaydiaMonoNerdFontMono-Regular.ttf");
+    let font_data = include_bytes!("../../../../fonts/CaskaydiaMonoNerdFontMono-Regular.ttf");
     
     let mut font = match TrueTypeFont::load_font(font_data) {
         Ok(f) => f,

@@ -43,12 +43,25 @@ src/
 └── main.rs        # Window management and event loop
 ```
 
+## Fonts & Licenses
+
+### Embedded Font
+This library includes **Cascadia Code Nerd Font Mono** for text rendering in SVGs.
+
+- **Font**: Cascadia Code Nerd Font Mono Regular
+- **License**: SIL Open Font License 1.1 (OFL)
+- **Copyright**:
+    - © 2019 Microsoft Corporation (Cascadia Code)
+    - © 2021 Ryan L McIntyre (Nerd Fonts patches)
+- **License File**: See `fonts/LICENSE-OFL.txt`
+
+The SIL OFL allows free use, modification, and redistribution. The font is bundled with this library for convenience and does not affect the MIT license of the code.
+
+### Links
+- [Cascadia Code](https://github.com/microsoft/cascadia-code) (Original font)
+- [Nerd Fonts](https://www.nerdfonts.com/) (Patched version)
+
 ## License
 
 Licensed under the [MIT License](LICENSE).
 
----
-
-<div align="center">
-  <sub>Painting pixels with vectors 🎨</sub>
-</div>
