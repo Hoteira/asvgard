@@ -1,67 +1,89 @@
 <div align="center">
-  <br>
-  <img src="https://raw.githubusercontent.com/Hoteira/asvgard/refs/heads/master/icon/icon.svg" alt="Asvgard Logo" width="120" height="120">
+  <img src="icon/icon.svg" alt="Asvgard Logo" width="120" height="120">
 
 # Asvgard
 
-**High-performance SVG rasterizer written in Rust**
+**A Lightweight, Embeddable Vector Graphics Rasterizer**
 
-[![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=flat&logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Crates.io](https://img.shields.io/crates/v/asvgard.svg?style=flat-square)](https://crates.io/crates/asvgard)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+[![no_std](https://img.shields.io/badge/no__std-compatible-success.svg?style=flat-square)](https://docs.rust-embedded.org/book/)
 
-<sub>🦀 Pure Rust • ⚡ Fast Rendering • 🖼️ Vector Graphics</sub>
+<sub>SVG • PNG • TGA • Pure Rust • Zero External Dependencies</sub>
 </div>
 
 <br>
 
-## Quick Start
+## 📖 Overview
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/asvgard.git
-cd asvgard
+**Asvgard** is a compact graphics rendering library designed for high-performance parsing and rasterization of **SVG**, **PNG**, and **TGA** formats. 
 
-# Run the demo (renders built-in bunny.svg)
-cargo run --release
-```
+Built with a focus on educational value and portability, it implements all decoding logic from scratch—including a full **DEFLATE/zlib** implementation and **XML** parser—avoiding the bloat of heavy external crates. This makes it uniquely suited for bare-metal environments, kernel development, and lightweight GUI applications.
 
-## Features
+## ✨ Key Features
 
-- 🚀 **Fast Rasterization** — Optimized rendering pipeline for vector graphics
-- 📐 **Smart Transforms** — Automatically handles `viewBox` scaling and centering
-- 🧩 **Modular Architecture** — Clean separation between `parser` and `rasterizer`
-- 🖥️ **Live Preview** — Built-in windowed viewer using `minifb`
-- 🔗 **Defs & ID Support** — Resolves shared resources and definitions
+-   **🖼️ Multi-Format Support:**
+    -   **SVG:** Supports paths, shapes (rect, circle, polygon), strokes, fills, and transforms.
+    -   **PNG:** Custom DEFLATE decompression (Huffman coding, LZ77), adaptive filtering, and interlacing.
+    -   **TGA:** Uncompressed and RLE-compressed TrueColor/Grayscale support.
+-   **🛠️ Dependency Free:** No `image`, `flate2`, or `xml-rs`. Every byte of logic is internal.
+-   **⚙️ no_std Compatible:** Designed to run in environments without an operating system (allocator required).
+-   **⚡ SIMD Optimized:** Contains hand-written SIMD routines for critical filtering and blending operations.
+-   **📐 Smart Transforms:** Automatically handles SVG `viewBox` scaling and centering.
 
-## Architecture
+## 🏗️ Architecture
 
 ```
-src/
-├── parser/        # XML parsing and tag structure
-├── rasterizer/    # Drawing logic and pixel buffer management
-├── utils/         # Math helpers (Matrices, Transforms)
-└── main.rs        # Window management and event loop
+asvgard/
+├── src/
+│   ├── svg/           # XML Parser & SVG Tag Logic
+│   │   ├── parser/    # Lexer and Tag Tree builder
+│   │   └── rasterizer/ # Scanline rasterizer & Filters (Blur, Offset)
+│   ├── png/           # DEFLATE decompressor & Filter reconstruction
+│   ├── tga/           # TGA Header parsing & RLE decoding
+│   └── utils/         # Math, Transforms, and Compatibility layers
 ```
 
-## Fonts & Licenses
+## 🚀 Usage
 
-### Embedded Font
-This library includes **Cascadia Code Nerd Font Mono** for text rendering in SVGs.
+Asvgard provides a unified interface for loading images. It automatically detects the file format from the byte header.
 
-- **Font**: Cascadia Code Nerd Font Mono Regular
-- **License**: SIL Open Font License 1.1 (OFL)
-- **Copyright**:
-    - © 2019 Microsoft Corporation (Cascadia Code)
-    - © 2021 Ryan L McIntyre (Nerd Fonts patches)
-- **License File**: See `fonts/LICENSE-OFL.txt`
+```rust
+use asvgard::prelude::*;
 
-The SIL OFL allows free use, modification, and redistribution. The font is bundled with this library for convenience and does not affect the MIT license of the code.
+fn main() {
+    // 1. Load raw bytes
+    let data = include_bytes!("../assets/image.svg");
+    
+    // 2. Define target resolution
+    let width = 800;
+    let height = 600;
 
-### Links
-- [Cascadia Code](https://github.com/microsoft/cascadia-code) (Original font)
-- [Nerd Fonts](https://www.nerdfonts.com/) (Patched version)
+    // 3. Rasterize
+    // Returns a Result<Vec<u32>, String> buffer in 0xAARRGGBB format
+    match load_image(data, width, height) {
+        Ok(buffer) => {
+            println!("Successfully rendered {} pixels!", buffer.len());
+        },
+        Err(e) => eprintln!("Error rendering image: {}", e),
+    }
+}
+```
 
-## License
+## 📦 Installation
 
-Licensed under the [MIT License](LICENSE).
+```toml
+[dependencies]
+asvgard = "0.1.0"
+```
 
+To use in a **no_std** environment, disable default features:
+
+```toml
+[dependencies]
+asvgard = { version = "0.1.0", default-features = false }
+```
+
+## 📜 License
+
+Distributed under the [MIT](LICENSE) license.
