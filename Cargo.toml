@@ -13,7 +13,7 @@ keywords = ["svg", "png", "tga", "rasterizer", "graphics"]
 categories = ["graphics", "multimedia::images", "no-std"]
 
 [dependencies]
-titanf = "2.1.0"
+titanf = "2.2.1"
 
 [features]
 default = ["std"]
