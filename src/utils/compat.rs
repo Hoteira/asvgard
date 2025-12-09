@@ -45,6 +45,7 @@ pub trait FloatExt {
     fn min(self, other: Self) -> Self;
     fn clamp(self, min: Self, max: Self) -> Self;
     fn signum(self) -> Self;
+    fn tan(self) -> Self;
 }
 
 impl FloatExt for f32 {
@@ -67,6 +68,13 @@ impl FloatExt for f32 {
         return self.cos();
         #[cfg(not(feature = "std"))]
         return math::cos(self);
+    }
+
+    fn tan(self) -> Self {
+        #[cfg(feature = "std")]
+        return self.tan();
+        #[cfg(not(feature = "std"))]
+        return math::tan(self);
     }
 
     fn round(self) -> Self {

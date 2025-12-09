@@ -41,7 +41,7 @@ pub fn cos(x: f32) -> f32 {
 
 #[cfg(not(feature = "std"))]
 pub fn round(x: f32) -> f32 {
-    (x + 0.5).floor()
+    floor(x + 0.5)
 }
 
 #[cfg(not(feature = "std"))]
@@ -62,6 +62,11 @@ pub fn ceil(x: f32) -> f32 {
     } else {
         i as f32
     }
+}
+
+#[cfg(not(feature = "std"))]
+pub fn tan(x: f32) -> f32 {
+    sin(x) / cos(x)
 }
 
 #[cfg(not(feature = "std"))]
