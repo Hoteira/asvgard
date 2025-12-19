@@ -16,9 +16,9 @@ pub struct Adler32 {
 /// Reads bits from a byte stream, LSB first.
 pub struct BitReader {
     data: Vec<u8>,
-    position: usize, // Current byte index in `data`
-    bit_buffer: u64, // Accumulator for bits
-    bits_left: u8,   // Number of valid bits in `bit_buffer`
+    position: usize,
+    bit_buffer: u64,
+    bits_left: u8,
 }
 
 impl BitReader {
@@ -71,12 +71,11 @@ impl BitReader {
 
 #[derive(Debug)]
 pub struct HuffmanTree {
-    pub counts: [u16; 16], // Number of codes of each length
-    pub symbols: Vec<u16>, // Symbols sorted by code length
-    
-    // Optimizations for faster decoding (precomputed during from_lengths)
-    pub min_code_value_for_length: [u16; 16], // The smallest canonical code value for a given length
-    pub val_ptrs: [usize; 16], // Index into `symbols` for the first symbol of that length
+    pub counts: [u16; 16],
+    pub symbols: Vec<u16>,
+
+    pub min_code_value_for_length: [u16; 16],
+    pub val_ptrs: [usize; 16],
 }
 
 impl HuffmanTree {
@@ -112,13 +111,9 @@ impl HuffmanTree {
         }
 
         // Sort symbols by length and then by value (canonical Huffman: RFC 1951, 3.2.2. step 3)
-        // We use a temporary vec of vecs to group symbols by length
         let mut symbols_grouped_by_len: Vec<Vec<u16>> = vec![Vec::new(); 16];
         for (sym_idx, &len) in lengths.iter().enumerate() {
             if len > 0 {
-                // Symbols must be ordered by their original value *within* each length group
-                // Since `lengths` (input) is indexed by symbol, and we fill `symbols_grouped_by_len` in order,
-                // they are effectively already sorted.
                 symbols_grouped_by_len[len as usize].push(sym_idx as u16);
             }
         }
@@ -139,20 +134,16 @@ impl HuffmanTree {
     }
 
     pub fn decode(&self, reader: &mut BitReader) -> Result<u16, String> {
-        let mut current_code_val_from_stream: u16 = 0; // The canonical code value read from the stream
-        
-        for len in 1..=15 { // Iterate through possible code lengths
-            // Read one more bit and append to our current code pattern
+        let mut current_code_val_from_stream: u16 = 0;
+
+        for len in 1..=15 {
+
             current_code_val_from_stream = (current_code_val_from_stream << 1) | reader.read_bits(1) as u16;
 
-            // Check if there are codes of this length, and if our `current_code_val_from_stream`
-            // falls within the range of valid canonical codes for this length.
             if self.counts[len] > 0 {
                 let min_code = self.min_code_value_for_length[len];
                 if current_code_val_from_stream >= min_code {
                     let offset = current_code_val_from_stream - min_code;
-                    // Crucial fix: Ensure the code is within the count of codes for this length.
-                    // Without this, a prefix of a longer code could be mistaken for a valid code of this length.
                     if offset < self.counts[len] {
                         let symbol_index = self.val_ptrs[len] + offset as usize;
                         if symbol_index < self.symbols.len() {
@@ -186,6 +177,7 @@ pub fn decompress(data: &[u8]) -> Result<Vec<u8>, String> {
 
         if bfinal { break; }
     }
+
     Ok(output)
 }
 
@@ -270,6 +262,8 @@ fn decode_block(reader: &mut BitReader, output: &mut Vec<u8>, lit_tree: &Huffman
             }
             _ => return Err(format!("Invalid literal/length symbol: {}", symbol)),
         }
+
+        return Ok(())
     }
 }
 
