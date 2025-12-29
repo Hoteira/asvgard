@@ -9,7 +9,6 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![no_std](https://img.shields.io/badge/no__std-compatible-success.svg?style=flat-square)](https://docs.rust-embedded.org/book/)
 
-<sub>SVG • PNG • TGA • Pure Rust • Zero External Dependencies</sub>
 </div>
 
 <br>
