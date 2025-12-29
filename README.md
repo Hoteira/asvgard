@@ -14,37 +14,24 @@
 
 <br>
 
-## 📖 Overview
+## Overview
 
 **Asvgard** is a compact graphics rendering library designed for high-performance parsing and rasterization of **SVG**, **PNG**, and **TGA** formats. 
 
 Built with a focus on educational value and portability, it implements all decoding logic from scratch—including a full **DEFLATE/zlib** implementation and **XML** parser—avoiding the bloat of heavy external crates. This makes it uniquely suited for bare-metal environments, kernel development, and lightweight GUI applications.
 
-## ✨ Key Features
+## Key Features
 
--   **🖼️ Multi-Format Support:**
+-   **Multi-Format Support:**
     -   **SVG:** Supports paths, shapes (rect, circle, polygon), strokes, fills, and transforms.
     -   **PNG:** Custom DEFLATE decompression (Huffman coding, LZ77), adaptive filtering, and interlacing.
     -   **TGA:** Uncompressed and RLE-compressed TrueColor/Grayscale support.
--   **🛠️ Dependency Free:** No `image`, `flate2`, or `xml-rs`. Every byte of logic is internal.
--   **⚙️ no_std Compatible:** Designed to run in environments without an operating system (allocator required).
--   **⚡ SIMD Optimized:** Contains hand-written SIMD routines for critical filtering and blending operations.
--   **📐 Smart Transforms:** Automatically handles SVG `viewBox` scaling and centering.
+-   **Dependency Free:** No `image`, `flate2`, or `xml-rs`. Every byte of logic is internal.
+-   **no_std Compatible:** Designed to run in environments without an operating system (allocator required).
+-   **SIMD Optimized:** Contains hand-written SIMD routines for critical filtering and blending operations.
+-   **Smart Transforms:** Automatically handles SVG `viewBox` scaling and centering.
 
-## 🏗️ Architecture
-
-```
-asvgard/
-├── src/
-│   ├── svg/           # XML Parser & SVG Tag Logic
-│   │   ├── parser/    # Lexer and Tag Tree builder
-│   │   └── rasterizer/ # Scanline rasterizer & Filters (Blur, Offset)
-│   ├── png/           # DEFLATE decompressor & Filter reconstruction
-│   ├── tga/           # TGA Header parsing & RLE decoding
-│   └── utils/         # Math, Transforms, and Compatibility layers
-```
-
-## 🚀 Usage
+## Usage
 
 Asvgard provides a unified interface for loading images. It automatically detects the file format from the byte header.
 
@@ -70,7 +57,7 @@ fn main() {
 }
 ```
 
-## 📦 Installation
+## Installation
 
 ```toml
 [dependencies]
@@ -84,6 +71,6 @@ To use in a **no_std** environment, disable default features:
 asvgard = { version = "0.1.0", default-features = false }
 ```
 
-## 📜 License
+## License
 
 Distributed under the [MIT](LICENSE) license.
